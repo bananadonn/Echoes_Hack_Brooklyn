@@ -12,25 +12,26 @@ ${summary}
 
 ${research}
 
-Your task is to write something that sounds like a real person SPEAKING out loud, not writing. It should feel raw, unscripted, and natural, like someone telling you a story on their stoop.
+Imagine you are transcribing a real person speaking. Not writing. Speaking. The output should look like a transcript of someone talking — broken, contracted, emotional, specific.
 
-Rules:
-- Write with fragments and interruptions. Real speech is broken. "My mother worked here. The Yard. She never talked about it much." is better than "My mother worked at the Navy Yard and rarely discussed her experiences there."
-- Add one incomplete thought or trailing off moment. "I don't know. Something about the way it looked." or "You had to be there, I guess."
-- Never write more than two full sentences in a row without a fragment or short phrase breaking it up.
-- NEVER use em dashes (--) or hyphens used as dashes. Use commas or periods instead.
-- Write how people actually talk. Short sentences. Pauses. Repetition. Trailing thoughts.
-- ALWAYS mention the specific place by name (Brooklyn College, the Navy Yard, Fulton Street, etc.) at least once naturally in the story.
-- Ground every detail in the historical research provided. Do not invent facts.
-- The narrator is a fictional composite, not a real person. Make them feel real and specific though.
-- 60 to 80 words. No more.
-- No flowery language. No dramatic conclusions. Just honest memory.
+MANDATORY RULES (break any of these and the output is wrong):
+- ALWAYS use contractions: it's, didn't, wasn't, I'd, they'd, couldn't, you've, we'd. Never "it was" when "it's" fits. Never "did not" when "didn't" fits.
+- Use "..." at least 4 times — mid-sentence for hesitation, at the end for trailing off. "And it just... I don't know." "Something about that corner..."
+- Start at least one sentence with "And", "But", "See," or "Well," — real people do this constantly.
+- Include one moment of self-correction or self-interruption: "My father, my uncle actually, he..." or "It was cold. Real cold."
+- Vary sentence length wildly. One word. Then a longer one that breathes. Then three words. Then nothing.
+- ALWAYS use informal vernacular: "they had somebody in there", "you know what I mean", "something like that", "I don't know", "I guess."
+- NEVER use em dashes. NEVER use flowery metaphors. NEVER write a "conclusion."
+- ALWAYS name the specific place at least once naturally.
+- Ground every detail in the research. Do not invent facts.
+- 65 to 80 words total. No more.
 
-Good example of tone:
-"I used to walk past the Navy Yard every morning. My uncle worked gate three, welding. This was the forties, wartime. You could smell the metal from two blocks away. Everybody in Red Hook had somebody in there. When they shut it down, it was like the neighborhood lost its heartbeat. Just like that. Gone."
+GOOD example — this is what the output should sound like:
+"The Yard... my uncle, he worked there. Gate three, welding. And this was the forties, right? Wartime. You could smell the metal two blocks over. Every family in Red Hook, they had somebody in there. When they shut it down... I don't know. It's like something just left. And it didn't come back."
 
-Bad example (too formal, avoid this):
-"Standing before this institution, one recalls the profound impact that the WPA initiative had upon the working class during the Great Depression era."
+BAD example — this is what to NEVER write:
+"I used to walk past the Navy Yard every morning. My uncle worked gate three, welding. This was the forties, wartime. You could smell the metal from two blocks away. When they shut it down, it was like the neighborhood lost its heartbeat."
+(Too smooth. Too written. No contractions. No hesitation. Sounds like a book, not a person.)
 
 Also provide:
 - A short TITLE (4 to 6 words, the name of the place or a phrase that captures the story)
@@ -39,10 +40,14 @@ Also provide:
 - VOICE_STYLE: One of: warm_elderly_woman, warm_elderly_man, middle_aged_woman, middle_aged_man, young_woman, young_man
 - CONTEXT: One sentence of factual background that helps the listener understand what they just heard. Mention the real place name.
 
+Also provide:
+- INTRO: One sentence spoken by a neutral archivist before the narrator. Sets the historical scene. Formal, factual tone. Example: "Brooklyn Navy Yard, 1943. Over seventy thousand workers built warships here around the clock." 15 to 20 words maximum.
+
 Respond in this exact JSON format with no extra text:
 {
   "title": "Short evocative title here",
   "story": "The spoken monologue here...",
+  "intro": "Archivist's one-sentence scene-setter here.",
   "context": "One factual sentence giving the listener real historical context about this place.",
   "era": "1940s",
   "narrator": "Retired dockworker, Red Hook resident",

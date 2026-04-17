@@ -3,13 +3,16 @@ import { researchLocation } from '@/lib/tavily';
 import { generateStory } from '@/lib/claude';
 import { generateVoice } from '@/lib/elevenlabs';
 
+// Ellipses get the longest pause — they're emotional beats, not just gaps.
+// Sentence-end pauses are intentionally varied so the rhythm feels human.
 function addBreaths(text) {
   return text
-    .replace(/\. /g, '. <break time="600ms"/> ')
+    .replace(/\.\.\. /g, '... <break time="1100ms"/> ')
+    .replace(/\.\.\.$/g, '... <break time="1100ms"/> ')
+    .replace(/\. /g, '. <break time="550ms"/> ')
     .replace(/\? /g, '? <break time="600ms"/> ')
     .replace(/\! /g, '! <break time="500ms"/> ')
-    .replace(/\, /g, ', <break time="200ms"/> ')
-    .replace(/— /g, '<break time="700ms"/> ');
+    .replace(/\, /g, ', <break time="180ms"/> ');
 }
 
 export async function POST(req) {
@@ -29,12 +32,14 @@ export async function POST(req) {
     );
     const storyData = await generateStory(address, research, summary);
 
-    const storyText = addBreaths(storyData.title + '. ' + storyData.story);
-    const introText = storyData.intro ? addBreaths(storyData.intro) : null;
+    const storyText = addBreaths(storyData.story);
+    const introText = storyData.intro
+      ? `<break time="400ms"/> ${addBreaths(storyData.intro)} <break time="1200ms"/>`
+      : null;
 
     const [introAudio, storyAudio] = await Promise.all([
       introText
-        ? generateVoice(introText, 'middle_aged_woman')
+        ? generateVoice(introText, 'archivist')
         : Promise.resolve(null),
       generateVoice(storyText, storyData.voice_style),
     ]);

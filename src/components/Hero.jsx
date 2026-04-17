@@ -149,9 +149,6 @@ export default function Hero() {
           <Link href="/map" className="btn-primary">
             Explore the map →
           </Link>
-          <a href="#how" className="btn-ghost">
-            How it works
-          </a>
         </div>
 
         {/* Demo card */}
