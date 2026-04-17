@@ -1,17 +1,8 @@
-/**
- * ElevenLabs voice library for Echoes.
- *
- * Voice table maps { era, gender, tone } → ElevenLabs voice_id.
- * Uses cascading fallback: era+gender+tone → era+gender → gender → default.
- *
- * Replace voice IDs with your chosen voices once you've auditioned them at
- * https://elevenlabs.io/voice-library
- */
-
 // ---------------------------------------------------------------------------
 // Voice table — pre-picked voices covering key era / gender / tone combos
 // Keys: "<era>-<gender>-<tone>"
 // ---------------------------------------------------------------------------
+
 export const VOICE_TABLE = {
   // 1940s Brooklyn — WWII era, working-class
   '1940s-female-nostalgic':   'EXAVITQu4vr4xnSDxMaL', // Bella  — soft, warm
@@ -53,11 +44,7 @@ export const VOICE_TABLE = {
   'default':                  'ErXwobaYiN019PkySvjV', // Antoni — well-rounded
 };
 
-/**
- * Pick the best matching ElevenLabs voice_id for the given narrator profile.
- * @param {{ era: string, gender: string, tone: string }} narrator
- * @returns {string} ElevenLabs voice_id
- */
+//input claude narrator and pick a voice from the table based on its parameters 
 export function pickVoice(narrator) {
   const { era = '', gender = '', tone = '' } = narrator ?? {};
 
@@ -76,14 +63,6 @@ export function pickVoice(narrator) {
   );
 }
 
-/**
- * Call ElevenLabs TTS and return the raw streaming Response.
- * Caller is responsible for piping response.body to the client.
- *
- * @param {string} text        — story text to narrate
- * @param {string} voiceId     — ElevenLabs voice_id
- * @returns {Promise<Response>} raw fetch Response with audio/mpeg body
- */
 export async function streamTTS(text, voiceId) {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) throw new Error('ELEVENLABS_API_KEY is not set');
