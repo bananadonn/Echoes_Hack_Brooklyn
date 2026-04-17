@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Echoes — Data Flow Architecture</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #151821;
+    --panel-2: #1c2030;
+    --ink: #e9ecf1;
+    --muted: #9aa3b2;
+    --accent: #ffb86b;
+    --map: #5ac8fa;
+    --tavily: #b388ff;
+    --claude: #ff7a7a;
+    --eleven: #7afcb8;
+    --line: #2a2f3d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Inter, system-ui, sans-serif;
+    background: radial-gradient(1200px 800px at 20% -10%, #1a1e2b 0%, var(--bg) 55%);
+    color: var(--ink);
+    padding: 40px 28px 80px;
+    line-height: 1.5;
+  }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin-bottom: 32px; font-size: 14px; }
+  .legend {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    margin-bottom: 28px; font-size: 12px; color: var(--muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  .flow {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .step {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 16px;
+    position: relative;
+  }
+  .step::after {
+    content: "";
+    position: absolute;
+    left: 44px; bottom: -18px;
+    width: 2px; height: 18px;
+    background: linear-gradient(to bottom, var(--line), transparent);
+  }
+  .step:last-child::after { display: none; }
+
+  .num {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+  }
+  .title { font-size: 16px; font-weight: 600; margin: 4px 0 4px; }
+  .actor { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .actor b { color: var(--ink); font-weight: 600; }
+
+  .payload {
+    background: #0e1119;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    color: #d8dde7;
+    overflow-x: auto;
+    white-space: pre;
+    margin-top: 8px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .tag.frontend { background: rgba(90,200,250,.15); color: var(--map); }
+  .tag.backend  { background: rgba(255,184,107,.15); color: var(--accent); }
+  .tag.tavily   { background: rgba(179,136,255,.15); color: var(--tavily); }
+  .tag.claude   { background: rgba(255,122,122,.15); color: var(--claude); }
+  .tag.eleven   { background: rgba(122,252,184,.15); color: var(--eleven); }
+
+  .note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .arrow-label {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    margin: -10px 0 -4px;
+  }
+
+  .ascii {
+    background: #0e1119;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12.5px;
+    color: #cdd4e0;
+    white-space: pre;
+    overflow-x: auto;
+    max-width: 960px;
+    margin: 0 auto 32px;
+    line-height: 1.35;
+  }
+
+  h2 {
+    max-width: 960px;
+    margin: 40px auto 14px;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+  }
+
+  .tips {
+    max-width: 960px;
+    margin: 24px auto 0;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 22px;
+    color: var(--ink);
+    font-size: 14px;
+  }
+  .tips b { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div style="max-width:960px; margin:0 auto 12px;">
+  <h1>Echoes — end-to-end data flow</h1>
+  <div class="sub">Mapbox tap → Next.js API → Tavily → Claude → ElevenLabs → audio back to the page</div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--map)"></i> Frontend / Mapbox</span>
+    <span><i class="dot" style="background:var(--accent)"></i> Next.js API (your backend)</span>
+    <span><i class="dot" style="background:var(--tavily)"></i> Tavily</span>
+    <span><i class="dot" style="background:var(--claude)"></i> Claude</span>
+    <span><i class="dot" style="background:var(--eleven)"></i> ElevenLabs</span>
+  </div>
+</div>
+
+<h2>High-level diagram</h2>
+<div class="ascii">
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         BROWSER  (Next.js 15 page)                           │
+│                                                                              │
+│   ┌────────────────────────┐        ┌──────────────────────────────────┐     │
+│   │   Mapbox GL JS         │  tap   │   React audio player + waveform  │     │
+│   │   (interactive map)    │───────▶│   (plays returned MP3 stream)    │     │
+│   └──────────┬─────────────┘        └───────────────▲──────────────────┘     │
+│              │ lng / lat / placeName                │ audio + story text     │
+│              ▼                                      │                        │
+└──────────────┼──────────────────────────────────────┼────────────────────────┘
+               │                                      │
+               │  POST /api/story   { lng, lat, … }   │   200 OK
+               ▼                                      │   { audioUrl, story, sources }
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                     NEXT.JS API ROUTE  (your orchestrator)                   │
+│                                                                              │
+│   1. Reverse-geocode the tap (Mapbox Geocoding) → street + neighborhood      │
+│   2. Call Tavily with a targeted historical query                            │
+│   3. Feed Tavily's results into Claude → 45–60s first-person story           │
+│   4. Send story text to ElevenLabs → MP3 stream                              │
+│   5. (Optional) cache {coords → story + audioUrl} in Supabase                │
+│   6. Return JSON payload to the browser                                      │
+│                                                                              │
+└─────────┬───────────────────┬──────────────────────┬─────────────────────────┘
+          │                   │                      │
+          │ query             │ historical context   │ story text + voice id
+          ▼                   ▼                      ▼
+   ┌────────────┐       ┌────────────┐         ┌──────────────┐
+   │  TAVILY    │──────▶│   CLAUDE   │────────▶│  ELEVENLABS  │
+   │  (facts)   │  raw  │ (narrator) │  story  │   (voice)    │
+   └────────────┘       └────────────┘         └──────────────┘
+</div>
+
+<h2>Step-by-step, with the actual payloads</h2>
+
+<div class="flow">
+
+  <!-- Step 1 -->
+  <div class="step">
+    <div class="num">1</div>
+    <div>
+      <div><span class="tag frontend">Frontend · Mapbox GL JS</span></div>
+      <div class="title">User taps a building on the Brooklyn map</div>
+      <div class="actor">Mapbox fires a <b>click</b> event on the map. You grab the lng/lat from the event, and optionally the nearest feature (building footprint, street name) from <b>queryRenderedFeatures</b>.</div>
+<div class="payload">// In your React map component
+map.on('click', async (e) =&gt; {
+  const { lng, lat } = e.lngLat;
+  const features = map.queryRenderedFeatures(e.point);
+  const hit = features[0]; // nearest building / poi if any
+
+  const res = await fetch('/api/story', {
+    method: 'POST',
+    body: JSON.stringify({
+      lng, lat,
+      featureName: hit?.properties?.name ?? null,
+      layer: hit?.layer?.id ?? null
+    })
+  });
+  const { story, audioUrl, sources } = await res.json();
+  playAudio(audioUrl); showCard(story, sources);
+});</div>
+    </div>
+  </div>
+
+  <div class="arrow-label">▼  HTTP POST /api/story  ▼</div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <div class="num">2</div>
+    <div>
+      <div><span class="tag backend">Next.js API route</span><span class="tag frontend">Mapbox Geocoding</span></div>
+      <div class="title">Turn lat/lng into a searchable place (reverse geocode)</div>
+      <div class="actor">Tavily searches text, not coordinates. Convert the tap point into <b>"1 Washington Ave, Fort Greene, Brooklyn"</b> using Mapbox's Geocoding API so Tavily has something to search for.</div>
+<div class="payload">// /app/api/story/route.ts
+const geo = await fetch(
+  `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json`
+  + `?access_token=${process.env.MAPBOX_TOKEN}&types=address,neighborhood`
+).then(r =&gt; r.json());
+
+const place = geo.features[0];        // e.g. "63 Flushing Ave, Brooklyn"
+const neighborhood = place.context.find(c =&gt; c.id.startsWith('neighborhood'))?.text;
+const query = `History of ${place.place_name}, ${neighborhood}, Brooklyn NY — `
+            + `landmark records, news archives, census, notable events`;</div>
+    </div>
+  </div>
+
+  <div class="arrow-label">▼  server-side fetch  ▼</div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <div class="num">3</div>
+    <div>
+      <div><span class="tag tavily">Tavily API</span></div>
+      <div class="title">Pull verified historical facts for that address</div>
+      <div class="actor">Use Tavily's <b>/search</b> endpoint with <code>search_depth: "advanced"</code> and <code>include_raw_content: true</code>. Tavily returns ranked results from news archives, landmark DBs, public records.</div>
+<div class="payload">const tavily = await fetch('https://api.tavily.com/search', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    api_key: process.env.TAVILY_API_KEY,
+    query,
+    search_depth: 'advanced',
+    include_answer: true,
+    include_raw_content: true,
+    max_results: 6,
+    include_domains: [
+      'nyc.gov', 'nypl.org', 'brooklynhistory.org',
+      'nytimes.com', 'brooklyneagle.com', 'wikipedia.org'
+    ]
+  })
+}).then(r =&gt; r.json());
+
+// tavily.answer      → one-paragraph synthesis
+// tavily.results[]   → { title, url, content, raw_content }</div>
+      <div class="note">Fallback: if <code>results</code> is thin, re-query at the block level, then the neighborhood level, then the era. Something always surfaces.</div>
+    </div>
+  </div>
+
+  <div class="arrow-label">▼  pass facts into Claude  ▼</div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <div class="num">4</div>
+    <div>
+      <div><span class="tag claude">Claude API</span></div>
+      <div class="title">Turn raw facts into a 45–60s first-person narrative</div>
+      <div class="actor">Claude gets the Tavily results and returns <b>structured JSON</b>: the story, plus metadata you need to pick a voice (era, gender, accent, emotional tone).</div>
+<div class="payload">const claude = await anthropic.messages.create({
+  model: 'claude-sonnet-4-6',
+  max_tokens: 1200,
+  system: `You are Echoes. Given verified historical facts about a Brooklyn
+location, write a 45–60 second first-person monologue from a FICTIONAL but
+plausible narrator of that era. Never invent facts beyond what the sources
+support. Return strict JSON.`,
+  messages: [{
+    role: 'user',
+    content: `LOCATION: ${place.place_name}
+SOURCES:\n${tavily.results.map(r =&gt; `- ${r.title}: ${r.content}`).join('\n')}
+
+Return JSON with this shape:
+{
+  "story": "<the monologue, ~130 words>",
+  "narrator": { "era": "1940s", "gender": "female", "age": 34,
+                "accent": "brooklyn-working-class", "tone": "nostalgic" },
+  "sources": [{ "title": "...", "url": "..." }]
+}`
+  }]
+});
+
+const { story, narrator, sources } = JSON.parse(claude.content[0].text);</div>
+    </div>
+  </div>
+
+  <div class="arrow-label">▼  story + narrator profile  ▼</div>
+
+  <!-- Step 5 -->
+  <div class="step">
+    <div class="num">5</div>
+    <div>
+      <div><span class="tag eleven">ElevenLabs API</span></div>
+      <div class="title">Generate the voice and stream MP3 back</div>
+      <div class="actor">Map Claude's narrator profile to an ElevenLabs <b>voice_id</b> (pre-pick 6–10 voices covering eras/genders/accents). Hit <b>/text-to-speech/{voice_id}/stream</b> and get MP3 bytes.</div>
+<div class="payload">const voiceId = pickVoice(narrator); // small lookup table you maintain
+
+const audio = await fetch(
+  `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+  method: 'POST',
+  headers: {
+    'xi-api-key': process.env.ELEVENLABS_KEY,
+    'Content-Type': 'application/json',
+    'Accept': 'audio/mpeg'
+  },
+  body: JSON.stringify({
+    text: story,
+    model_id: 'eleven_turbo_v2_5',
+    voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.35 }
+  })
+});
+
+// Option A (simplest): buffer the MP3, upload to Supabase Storage,
+//                      return a public URL.
+// Option B (faster first-audio): stream bytes straight through your
+//                      API route as a ReadableStream to the browser.
+const buf = Buffer.from(await audio.arrayBuffer());
+const { data } = await supabase.storage.from('echoes')
+  .upload(`${crypto.randomUUID()}.mp3`, buf, { contentType: 'audio/mpeg' });
+const audioUrl = supabase.storage.from('echoes').getPublicUrl(data.path).data.publicUrl;</div>
+    </div>
+  </div>
+
+  <div class="arrow-label">▼  JSON response  ▼</div>
+
+  <!-- Step 6 -->
+  <div class="step">
+    <div class="num">6</div>
+    <div>
+      <div><span class="tag backend">API route</span><span class="tag frontend">Browser</span></div>
+      <div class="title">Return everything to the page, play + animate</div>
+      <div class="actor">Your API responds with one JSON blob. The frontend plays the MP3, drives the waveform from the audio element, and flips up the fact card with Tavily's sources.</div>
+<div class="payload">// API response shape
+{
+  "audioUrl": "https://.../echoes/abc123.mp3",
+  "story":    "I was seventeen the summer the Navy Yard hired me…",
+  "narrator": { "era": "1940s", "tone": "nostalgic", "accent": "brooklyn-working-class" },
+  "sources":  [{ "title": "Brooklyn Navy Yard, 1943", "url": "https://..." }]
+}
+
+// Client
+const audioEl = new Audio(audioUrl);
+const ctx = new AudioContext();
+const src = ctx.createMediaElementSource(audioEl);
+const analyser = ctx.createAnalyser();
+src.connect(analyser); analyser.connect(ctx.destination);
+audioEl.play();
+requestAnimationFrame(function draw() {
+  analyser.getByteFrequencyData(dataArray);
+  drawWaveform(dataArray);           // pulsing waveform on the map
+  requestAnimationFrame(draw);
+});</div>
+    </div>
+  </div>
+</div>
+
+<div class="tips">
+  <b>Two things worth deciding early:</b>
+  <br/>• <b>Streaming vs. buffering the audio.</b> Buffer-then-URL (Option A) is dead simple and lets Supabase cache it so the same tap is free next time. Streaming (Option B) cuts time-to-first-sound by ~1–2s but is trickier with Next.js route handlers — worth it only if judges will notice the delay.
+  <br/>• <b>Cache by rounded coordinates.</b> Round lng/lat to ~4 decimal places and key your Supabase cache on that. Same corner = same story = zero API cost on re-tap. Huge for demo day where you'll tap the same blocks repeatedly.
+</div>
+
+</body>
+</html>
