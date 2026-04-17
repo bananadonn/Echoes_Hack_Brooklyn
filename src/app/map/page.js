@@ -785,200 +785,8 @@ export default function MapPage() {
         >
           {story && (
             <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-              {/* Era + Narrator */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '0.4rem',
-                  flexWrap: 'wrap',
-                  gap: '0.5rem',
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "'DM Mono',monospace",
-                    fontSize: '0.6rem',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: '#c8a96e',
-                  }}
-                >
-                  {story.era}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'DM Mono',monospace",
-                    fontSize: '0.57rem',
-                    color: 'rgba(255,255,255,0.85)',
-                  }}
-                >
-                  {story.narrator}
-                </span>
-              </div>
 
-              {/* Title */}
-              <div
-                style={{
-                  fontFamily: "'Cormorant Garamond',serif",
-                  fontSize: '1.3rem',
-                  fontWeight: 300,
-                  color: '#f0ede8',
-                  marginBottom: '0.35rem',
-                }}
-              >
-                {story.title}
-              </div>
-
-              {/* Address */}
-              <div
-                style={{
-                  fontFamily: "'DM Mono',monospace",
-                  fontSize: '0.57rem',
-                  color: 'rgba(255,255,255,0.8)',
-                  marginBottom: '0.75rem',
-                }}
-              >
-                {story.address_display}
-              </div>
-
-              {/* Intro context shown while intro plays */}
-              {playingIntro && story.intro && (
-                <div
-                  style={{
-                    marginBottom: '0.85rem',
-                    fontFamily: "'DM Mono',monospace",
-                    fontSize: '0.68rem',
-                    color: 'rgba(255,255,255,0.5)',
-                    lineHeight: 1.7,
-                    borderLeft: '1px solid rgba(200,169,110,0.15)',
-                    paddingLeft: '1rem',
-                  }}
-                >
-                  {story.intro}
-                </div>
-              )}
-
-              {/* Story text */}
-              <div
-                style={{
-                  fontSize: 'clamp(0.95rem,2.5vw,1.1rem)',
-                  fontWeight: 300,
-                  fontStyle: 'italic',
-                  color: '#b8b4ae',
-                  lineHeight: 1.8,
-                  marginBottom: '1.25rem',
-                  borderLeft: '1px solid rgba(200,169,110,0.2)',
-                  paddingLeft: '1rem',
-                }}
-              >
-                "{story.story}"
-              </div>
-
-              {/* Single audio player */}
-              <div
-                style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}
-              >
-                <button
-                  onClick={togglePlay}
-                  style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '50%',
-                    border: '1px solid rgba(200,169,110,0.35)',
-                    background: 'rgba(200,169,110,0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                  }}
-                >
-                  {isAnyPlaying ? (
-                    <div style={{ display: 'flex', gap: '3px' }}>
-                      <div
-                        style={{
-                          width: '3px',
-                          height: '11px',
-                          background: '#c8a96e',
-                          borderRadius: '1px',
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: '3px',
-                          height: '11px',
-                          background: '#c8a96e',
-                          borderRadius: '1px',
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        width: 0,
-                        height: 0,
-                        borderTop: '5px solid transparent',
-                        borderBottom: '5px solid transparent',
-                        borderLeft: '9px solid #c8a96e',
-                        marginLeft: '2px',
-                      }}
-                    />
-                  )}
-                </button>
-                <div
-                  style={{ flex: 1, cursor: 'pointer' }}
-                  onClick={handleSeek}
-                >
-                  <div
-                    style={{
-                      height: '2px',
-                      background: 'rgba(255,255,255,0.08)',
-                      borderRadius: '1px',
-                      overflow: 'hidden',
-                      marginBottom: '5px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: '100%',
-                        background: '#c8a96e',
-                        width: `${progress}%`,
-                        transition: 'width 0.1s linear',
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{ display: 'flex', justifyContent: 'space-between' }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "'DM Mono',monospace",
-                        fontSize: '0.54rem',
-                        color: 'rgba(255,255,255,0.22)',
-                      }}
-                    >
-                      {playingIntro ? 'context' : story.era}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "'DM Mono',monospace",
-                        fontSize: '0.54rem',
-                        color: 'rgba(255,255,255,0.22)',
-                      }}
-                    >
-                      {playingIntro
-                        ? 'playing context...'
-                        : isPlaying
-                        ? 'playing...'
-                        : 'tap to play'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Hidden audio elements */}
+              {/* Hidden audio elements — always mounted so they can play */}
               {story.introAudio && (
                 <audio
                   ref={introAudioRef}
@@ -997,75 +805,122 @@ export default function MapPage() {
                   ref={audioRef}
                   src={story.audio}
                   onTimeUpdate={handleTimeUpdate}
-                  onEnded={() => {
-                    setIsPlaying(false);
-                    setProgress(0);
-                  }}
+                  onEnded={() => { setIsPlaying(false); setProgress(0); }}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                 />
               )}
 
-              {/* Context */}
-              <div
-                style={{
-                  marginTop: '0.85rem',
-                  fontFamily: "'DM Mono',monospace",
-                  fontSize: '0.6rem',
-                  color: 'rgba(255,255,255,0.7)',
-                  lineHeight: 1.6,
-                  letterSpacing: '0.02em',
-                }}
-              >
-                {story.context}
-              </div>
-
-              {/* Real sources from Tavily */}
-              {sources.length > 0 && (
+              {/* INTRO STATE — only the archivist line */}
+              {playingIntro && story.intro && (
                 <div
                   style={{
-                    marginTop: '0.75rem',
-                    paddingTop: '0.75rem',
-                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                    textAlign: 'center',
+                    padding: '1rem 0 1.5rem',
+                    fontFamily: "'DM Mono',monospace",
+                    fontSize: 'clamp(0.75rem,2vw,0.88rem)',
+                    color: 'rgba(255,255,255,0.55)',
+                    letterSpacing: '0.04em',
+                    lineHeight: 1.75,
                   }}
                 >
+                  {story.intro}
+                </div>
+              )}
+
+              {/* STORY STATE — revealed after intro ends */}
+              {!playingIntro && (
+                <>
                   <div
                     style={{
-                      fontFamily: "'DM Mono',monospace",
-                      fontSize: '0.54rem',
-                      color: 'rgba(200,169,110,0.8)',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                       marginBottom: '0.4rem',
+                      flexWrap: 'wrap',
+                      gap: '0.5rem',
                     }}
                   >
-                    Sources
+                    <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c8a96e' }}>
+                      {story.era}
+                    </span>
+                    <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.57rem', color: 'rgba(255,255,255,0.85)' }}>
+                      {story.narrator}
+                    </span>
                   </div>
-                  {sources.map((s, i) => (
-                    <div
-                      key={i}
+
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '1.3rem', fontWeight: 300, color: '#f0ede8', marginBottom: '0.35rem' }}>
+                    {story.title}
+                  </div>
+
+                  <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.57rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.75rem' }}>
+                    {story.address_display}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 'clamp(0.95rem,2.5vw,1.1rem)',
+                      fontWeight: 300,
+                      fontStyle: 'italic',
+                      color: '#b8b4ae',
+                      lineHeight: 1.8,
+                      marginBottom: '1.25rem',
+                      borderLeft: '1px solid rgba(200,169,110,0.2)',
+                      paddingLeft: '1rem',
+                    }}
+                  >
+                    &ldquo;{story.story}&rdquo;
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <button
+                      onClick={togglePlay}
                       style={{
-                        fontFamily: "'DM Mono',monospace",
-                        fontSize: '0.56rem',
-                        color: 'rgba(255,255,255,0.5)',
-                        padding: '0.15rem 0',
-                        display: 'flex',
-                        gap: '0.5rem',
-                        alignItems: 'flex-start',
+                        width: '38px', height: '38px', borderRadius: '50%',
+                        border: '1px solid rgba(200,169,110,0.35)',
+                        background: 'rgba(200,169,110,0.08)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', flexShrink: 0,
                       }}
                     >
-                      <span
-                        style={{
-                          color: 'rgba(200,169,110,0.4)',
-                          flexShrink: 0,
-                        }}
-                      >
-                        ·
-                      </span>
-                      {s}
+                      {isAnyPlaying ? (
+                        <div style={{ display: 'flex', gap: '3px' }}>
+                          <div style={{ width: '3px', height: '11px', background: '#c8a96e', borderRadius: '1px' }} />
+                          <div style={{ width: '3px', height: '11px', background: '#c8a96e', borderRadius: '1px' }} />
+                        </div>
+                      ) : (
+                        <div style={{ width: 0, height: 0, borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: '9px solid #c8a96e', marginLeft: '2px' }} />
+                      )}
+                    </button>
+                    <div style={{ flex: 1, cursor: 'pointer' }} onClick={handleSeek}>
+                      <div style={{ height: '2px', background: 'rgba(255,255,255,0.08)', borderRadius: '1px', overflow: 'hidden', marginBottom: '5px' }}>
+                        <div style={{ height: '100%', background: '#c8a96e', width: `${progress}%`, transition: 'width 0.1s linear' }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.54rem', color: 'rgba(255,255,255,0.22)' }}>{story.era}</span>
+                        <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.54rem', color: 'rgba(255,255,255,0.22)' }}>{isPlaying ? 'playing...' : 'tap to play'}</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+
+                  <div style={{ marginTop: '0.85rem', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, letterSpacing: '0.02em' }}>
+                    {story.context}
+                  </div>
+
+                  {sources.length > 0 && (
+                    <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.54rem', color: 'rgba(200,169,110,0.8)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                        Sources
+                      </div>
+                      {sources.map((s, i) => (
+                        <div key={i} style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.56rem', color: 'rgba(255,255,255,0.5)', padding: '0.15rem 0', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                          <span style={{ color: 'rgba(200,169,110,0.4)', flexShrink: 0 }}>·</span>
+                          {s}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
