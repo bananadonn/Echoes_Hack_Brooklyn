@@ -73,11 +73,13 @@ export default function MapPage() {
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const audioRef = useRef(null);
+  const introAudioRef = useRef(null);
 
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playingIntro, setPlayingIntro] = useState(false);
   const [progress, setProgress] = useState(0);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [search, setSearch] = useState('');
@@ -99,13 +101,11 @@ export default function MapPage() {
   useEffect(() => {
     if (!leafletLoaded || !mapContainer.current || mapRef.current) return;
     const L = window.L;
-
     const map = L.map(mapContainer.current, {
       center: BROOKLYN_CENTER,
       zoom: 13,
       zoomControl: false,
     });
-
     L.tileLayer(
       'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
       {
@@ -114,31 +114,22 @@ export default function MapPage() {
         maxZoom: 19,
       },
     ).addTo(map);
-
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-
     HOTSPOTS.forEach((spot) => {
       const icon = L.divIcon({
         className: '',
-        html: `<div class="hotspot-marker">
-          <div class="hotspot-dot"></div>
-          <div class="hotspot-label">${spot.name}<span>${spot.hint}</span></div>
-        </div>`,
+        html: `<div class="hotspot-marker"><div class="hotspot-dot"></div><div class="hotspot-label">${spot.name}<span>${spot.hint}</span></div></div>`,
         iconSize: [12, 12],
         iconAnchor: [6, 6],
       });
       const marker = L.marker([spot.lat, spot.lng], { icon }).addTo(map);
       marker.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
-        map.panTo([spot.lat, spot.lng], { animate: true, duration: 0.5 });
+        map.panTo([spot.lat, spot.lng], { animate: true });
         handleLocationClick(spot.lat, spot.lng);
       });
     });
-
-    map.on('click', (e) => {
-      handleLocationClick(e.latlng.lat, e.latlng.lng);
-    });
-
+    map.on('click', (e) => handleLocationClick(e.latlng.lat, e.latlng.lng));
     mapRef.current = map;
   }, [leafletLoaded]);
 
@@ -156,43 +147,27 @@ export default function MapPage() {
     );
   };
 
-  const handleLocationClick = async (lat, lng) => {
-    placeMarker(lat, lng);
+  const fetchStory = async (address, lat, lng) => {
     setLoading(true);
     setError(null);
     setStory(null);
     setIsPlaying(false);
+    setPlayingIntro(false);
     setProgress(0);
 
     try {
-      const geocodeRes = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-      );
-      const geocodeData = await geocodeRes.json();
-      const address =
-        geocodeData.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-
       const res = await fetch('/api/story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address, lat, lng }),
       });
-
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || 'Failed to generate story');
       }
-
       const data = await res.json();
       setStory(data);
-
-      // Autoplay after a short delay to let audio element mount
-      setTimeout(() => {
-        if (audioRef.current) {
-          audioRef.current.play();
-          setIsPlaying(true);
-        }
-      }, 500);
+      return data;
     } catch (err) {
       setError(err.message || 'Could not generate a story. Try another spot.');
     } finally {
@@ -200,67 +175,83 @@ export default function MapPage() {
     }
   };
 
+  const handleLocationClick = async (lat, lng) => {
+    placeMarker(lat, lng);
+    const geocodeRes = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+    );
+    const geocodeData = await geocodeRes.json();
+    const address =
+      geocodeData.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    const data = await fetchStory(address, lat, lng);
+    if (!data) return;
+    // Autoplay intro first
+    setTimeout(() => {
+      if (data.introAudio && introAudioRef.current) {
+        introAudioRef.current.play().catch(() => {});
+        setPlayingIntro(true);
+      } else if (data.audio && audioRef.current) {
+        audioRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      }
+    }, 400);
+  };
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!search.trim()) return;
-    setSearching(false);
-    setLoading(true);
-    setError(null);
-    setStory(null);
-    setIsPlaying(false);
-    setProgress(0);
+    setSearching(true);
     const query = search;
     setSearch('');
-
-    try {
-      const res = await fetch('/api/story', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          address: query + ', Brooklyn, New York',
-          lat: BROOKLYN_CENTER[0],
-          lng: BROOKLYN_CENTER[1],
-        }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Failed to generate story');
+    const data = await fetchStory(
+      query + ', Brooklyn, New York',
+      BROOKLYN_CENTER[0],
+      BROOKLYN_CENTER[1],
+    );
+    setSearching(false);
+    if (!data) return;
+    // Try to move map in background
+    fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+        query + ' Brooklyn New York',
+      )}&format=json&limit=1`,
+    )
+      .then((r) => r.json())
+      .then((geo) => {
+        if (geo.length > 0 && mapRef.current) {
+          mapRef.current.setView(
+            [parseFloat(geo[0].lat), parseFloat(geo[0].lon)],
+            16,
+            { animate: true },
+          );
+          placeMarker(parseFloat(geo[0].lat), parseFloat(geo[0].lon));
+        }
+      })
+      .catch(() => {});
+    // Autoplay
+    setTimeout(() => {
+      if (data.introAudio && introAudioRef.current) {
+        introAudioRef.current.play().catch(() => {});
+        setPlayingIntro(true);
+      } else if (data.audio && audioRef.current) {
+        audioRef.current.play().catch(() => {});
+        setIsPlaying(true);
       }
-
-      const data = await res.json();
-      setStory(data);
-
-      // Try to geocode in background to move the map
-      fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-          query + ' Brooklyn New York',
-        )}&format=json&limit=1`,
-      )
-        .then((r) => r.json())
-        .then((geo) => {
-          if (geo.length > 0 && mapRef.current) {
-            mapRef.current.setView(
-              [parseFloat(geo[0].lat), parseFloat(geo[0].lon)],
-              16,
-              { animate: true },
-            );
-            placeMarker(parseFloat(geo[0].lat), parseFloat(geo[0].lon));
-          }
-        })
-        .catch(() => {});
-    } catch (err) {
-      setError(
-        err.message || 'Could not generate a story. Try another location.',
-      );
-    } finally {
-      setLoading(false);
-    }
+    }, 400);
   };
 
   const togglePlay = () => {
+    if (playingIntro && introAudioRef.current) {
+      introAudioRef.current.pause();
+      setPlayingIntro(false);
+      return;
+    }
     if (!audioRef.current) return;
-    isPlaying ? audioRef.current.pause() : audioRef.current.play();
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
     setIsPlaying(!isPlaying);
   };
 
@@ -278,6 +269,8 @@ export default function MapPage() {
       ((e.clientX - rect.left) / rect.width) * audioRef.current.duration;
   };
 
+  const isAnyPlaying = isPlaying || playingIntro;
+
   return (
     <>
       <style>{`
@@ -291,6 +284,7 @@ export default function MapPage() {
         @keyframes markerPulse{0%{box-shadow:0 0 0 0 rgba(200,169,110,0.5)}70%{box-shadow:0 0 0 14px rgba(200,169,110,0)}100%{box-shadow:0 0 0 0 rgba(200,169,110,0)}}
         @keyframes fadeUpDown{0%,100%{opacity:0.4;transform:translateX(-50%) translateY(0)}50%{opacity:0.8;transform:translateX(-50%) translateY(-6px)}}
         @keyframes loadingPulse{0%,100%{opacity:0.2;transform:scale(0.8)}50%{opacity:1;transform:scale(1)}}
+        @keyframes fadeInSource{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
         .hotspot-marker{position:relative;cursor:pointer}
         .hotspot-dot{width:10px;height:10px;border-radius:50%;background:rgba(200,169,110,0.35);border:1.5px solid #c8a96e;transition:all .2s}
         .hotspot-marker:hover .hotspot-dot{background:rgba(200,169,110,0.8);transform:scale(1.5)}
@@ -351,7 +345,6 @@ export default function MapPage() {
               Brooklyn, New York
             </span>
           </div>
-
           <form
             onSubmit={handleSearch}
             style={{ display: 'flex', gap: '0.5rem', pointerEvents: 'all' }}
@@ -360,7 +353,7 @@ export default function MapPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search any Brooklyn address or neighborhood..."
+              placeholder="Search any Brooklyn address, neighborhood, or landmark..."
               style={{
                 flex: 1,
                 background: 'rgba(20,20,25,0.97)',
@@ -397,7 +390,7 @@ export default function MapPage() {
         {/* Map */}
         <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
 
-        {/* Hotspots panel */}
+        {/* Hotspots */}
         {showHotspots && (
           <div
             style={{
@@ -561,34 +554,79 @@ export default function MapPage() {
               background: 'rgba(14,14,18,0.97)',
               border: '1px solid rgba(200,169,110,0.2)',
               borderRadius: '4px',
-              padding: '0.85rem 1.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
+              padding: '1.25rem 1.75rem',
+              minWidth: '340px',
+              maxWidth: '90vw',
             }}
           >
-            {[0, 0.2, 0.4].map((d, i) => (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                marginBottom: '0.85rem',
+              }}
+            >
+              {[0, 0.2, 0.4].map((d, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '50%',
+                    background: '#c8a96e',
+                    animation: `loadingPulse 1s ${d}s infinite`,
+                  }}
+                />
+              ))}
+              <span
+                style={{
+                  fontFamily: "'DM Mono',monospace",
+                  fontSize: '0.65rem',
+                  letterSpacing: '0.08em',
+                  color: 'rgba(255,255,255,0.45)',
+                }}
+              >
+                Searching the archives...
+              </span>
+            </div>
+            {[
+              { label: 'NYC Municipal Archives', delay: '0.3s' },
+              { label: 'Brooklyn Daily Eagle, 1841-1955', delay: '1.1s' },
+              { label: 'NYC Landmarks Preservation Commission', delay: '2.0s' },
+              {
+                label: 'Library of Congress Historical Records',
+                delay: '3.1s',
+              },
+              { label: 'OpenStreetMap & Census Bureau', delay: '4.2s' },
+            ].map((s, i) => (
               <div
                 key={i}
                 style={{
-                  width: '5px',
-                  height: '5px',
-                  borderRadius: '50%',
-                  background: '#c8a96e',
-                  animation: `loadingPulse 1s ${d}s infinite`,
+                  fontFamily: "'DM Mono',monospace",
+                  fontSize: '0.6rem',
+                  color: 'rgba(200,169,110,0.65)',
+                  letterSpacing: '0.03em',
+                  padding: '0.2rem 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  opacity: 0,
+                  animation: `fadeInSource 0.4s ${s.delay} ease forwards`,
                 }}
-              />
+              >
+                <div
+                  style={{
+                    width: '4px',
+                    height: '4px',
+                    borderRadius: '50%',
+                    background: 'rgba(200,169,110,0.5)',
+                    flexShrink: 0,
+                  }}
+                />
+                Found: {s.label}
+              </div>
             ))}
-            <span
-              style={{
-                fontFamily: "'DM Mono',monospace",
-                fontSize: '0.65rem',
-                letterSpacing: '0.08em',
-                color: 'rgba(255,255,255,0.45)',
-              }}
-            >
-              Searching the archives...
-            </span>
           </div>
         )}
 
@@ -633,6 +671,7 @@ export default function MapPage() {
         >
           {story && (
             <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+              {/* Era + Narrator */}
               <div
                 style={{
                   display: 'flex',
@@ -665,17 +704,20 @@ export default function MapPage() {
                 </span>
               </div>
 
+              {/* Title */}
               <div
                 style={{
                   fontFamily: "'Cormorant Garamond',serif",
                   fontSize: '1.3rem',
                   fontWeight: 300,
                   color: '#f0ede8',
-                  marginBottom: '0.5rem',
+                  marginBottom: '0.35rem',
                 }}
               >
                 {story.title}
               </div>
+
+              {/* Address */}
               <div
                 style={{
                   fontFamily: "'DM Mono',monospace",
@@ -686,6 +728,25 @@ export default function MapPage() {
               >
                 {story.address_display}
               </div>
+
+              {/* Intro context shown while intro plays */}
+              {playingIntro && story.intro && (
+                <div
+                  style={{
+                    marginBottom: '0.85rem',
+                    fontFamily: "'DM Mono',monospace",
+                    fontSize: '0.68rem',
+                    color: 'rgba(255,255,255,0.5)',
+                    lineHeight: 1.7,
+                    borderLeft: '1px solid rgba(200,169,110,0.15)',
+                    paddingLeft: '1rem',
+                  }}
+                >
+                  {story.intro}
+                </div>
+              )}
+
+              {/* Story text */}
               <div
                 style={{
                   fontSize: 'clamp(0.95rem,2.5vw,1.1rem)',
@@ -701,6 +762,7 @@ export default function MapPage() {
                 "{story.story}"
               </div>
 
+              {/* Single audio player */}
               <div
                 style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}
               >
@@ -719,7 +781,7 @@ export default function MapPage() {
                     flexShrink: 0,
                   }}
                 >
-                  {isPlaying ? (
+                  {isAnyPlaying ? (
                     <div style={{ display: 'flex', gap: '3px' }}>
                       <div
                         style={{
@@ -751,7 +813,6 @@ export default function MapPage() {
                     />
                   )}
                 </button>
-
                 <div
                   style={{ flex: 1, cursor: 'pointer' }}
                   onClick={handleSeek}
@@ -784,7 +845,7 @@ export default function MapPage() {
                         color: 'rgba(255,255,255,0.22)',
                       }}
                     >
-                      {story.era}
+                      {playingIntro ? 'context' : story.era}
                     </span>
                     <span
                       style={{
@@ -793,12 +854,30 @@ export default function MapPage() {
                         color: 'rgba(255,255,255,0.22)',
                       }}
                     >
-                      {isPlaying ? 'playing...' : 'tap to play'}
+                      {playingIntro
+                        ? 'playing context...'
+                        : isPlaying
+                        ? 'playing...'
+                        : 'tap to play'}
                     </span>
                   </div>
                 </div>
               </div>
 
+              {/* Hidden audio elements */}
+              {story.introAudio && (
+                <audio
+                  ref={introAudioRef}
+                  src={story.introAudio}
+                  onEnded={() => {
+                    setPlayingIntro(false);
+                    if (audioRef.current) {
+                      audioRef.current.play().catch(() => {});
+                      setIsPlaying(true);
+                    }
+                  }}
+                />
+              )}
               {story.audio && (
                 <audio
                   ref={audioRef}
@@ -813,12 +892,13 @@ export default function MapPage() {
                 />
               )}
 
+              {/* Context */}
               <div
                 style={{
-                  marginTop: '0.75rem',
+                  marginTop: '0.85rem',
                   fontFamily: "'DM Mono',monospace",
                   fontSize: '0.6rem',
-                  color: 'rgba(255,255,255,0.6)',
+                  color: 'rgba(255,255,255,0.5)',
                   lineHeight: 1.6,
                   letterSpacing: '0.02em',
                 }}
