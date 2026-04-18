@@ -125,6 +125,10 @@ body::before {
   line-height: 1.8;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 .reveal {
   opacity: 0;
   transform: translateY(16px);
@@ -134,6 +138,85 @@ body::before {
 .reveal.visible {
   opacity: 1;
   transform: none;
+}
+
+/* staggered children inside a revealed section */
+.reveal-child {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.reveal.visible .reveal-child:nth-child(1) { opacity: 1; transform: none; transition-delay: 0.1s; }
+.reveal.visible .reveal-child:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.22s; }
+.reveal.visible .reveal-child:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.34s; }
+.reveal.visible .reveal-child:nth-child(4) { opacity: 1; transform: none; transition-delay: 0.46s; }
+
+/* nav links */
+.nav-link {
+  position: relative;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.25s;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--gold);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link:hover { color: var(--text); }
+.nav-link:hover::after { width: 100%; }
+
+/* explore button */
+.nav-explore {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  border: 1px solid rgba(200, 169, 110, 0.3);
+  padding: 0.5rem 1.2rem;
+  border-radius: 2px;
+  text-decoration: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.3s, border-color 0.3s, transform 0.2s, box-shadow 0.3s;
+  display: inline-block;
+}
+
+.nav-explore:hover {
+  background: rgba(200, 169, 110, 0.08);
+  border-color: rgba(200, 169, 110, 0.55);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 24px rgba(200, 169, 110, 0.12);
+}
+
+/* page-exit overlay */
+@keyframes curtainDown {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.page-exit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #111114;
+  pointer-events: none;
+  animation: curtainDown 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes fadeUp {

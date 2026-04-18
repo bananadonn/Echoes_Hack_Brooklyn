@@ -503,7 +503,6 @@ export default function MapPage() {
     setIsPlaying(!isPlaying);
   };
 
-
   const handleSeek = (e) => {
     if (!audioRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -575,7 +574,13 @@ export default function MapPage() {
   // When the canvas mounts (intro ends → !playingIntro renders the canvas),
   // kick off the draw loop if audio is already playing.
   useEffect(() => {
-    if (!playingIntro && isPlaying && waveformRef.current && canvasRef.current && !animFrameRef.current) {
+    if (
+      !playingIntro &&
+      isPlaying &&
+      waveformRef.current &&
+      canvasRef.current &&
+      !animFrameRef.current
+    ) {
       drawBars();
     }
   }, [playingIntro, isPlaying]);
@@ -678,7 +683,7 @@ export default function MapPage() {
                 fontFamily: "'DM Mono',monospace",
                 fontSize: '0.6rem',
                 letterSpacing: '0.1em',
-                color: 'rgba(255,255,255,0.3)',
+                color: 'rgba(255,255,255,0.7)',
                 textTransform: 'uppercase',
               }}
             >
@@ -1044,10 +1049,9 @@ export default function MapPage() {
                 <audio
                   ref={audioRef}
                   src={story.audio}
-
                   onEnded={() => {
                     setIsPlaying(false);
-                                    stopWaveform();
+                    stopWaveform();
                   }}
                   onPlay={() => {
                     setIsPlaying(true);

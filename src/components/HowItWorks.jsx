@@ -60,6 +60,7 @@ export default function HowItWorks() {
           {steps.map((s) => (
             <div
               key={s.num}
+              className="reveal-child"
               style={{
                 background: 'var(--bg)',
                 padding: '2rem',

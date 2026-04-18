@@ -1,76 +1,64 @@
 'use client';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function Navbar() {
+  const router = useRouter();
+  const [exiting, setExiting] = useState(false);
+
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const goToMap = (e) => {
+    e.preventDefault();
+    if (exiting) return;
+    setExiting(true);
+    setTimeout(() => router.push('/map'), 580);
+  };
+
   return (
-    <nav
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '1.5rem 3rem',
-      }}
-    >
-      <a
-        href="/"
+    <>
+      {exiting && <div className="page-exit-overlay" />}
+      <nav
         style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontWeight: 300,
-          fontSize: '1.1rem',
-          letterSpacing: '0.35em',
-          textTransform: 'uppercase',
-          color: 'var(--text)',
-          textDecoration: 'none',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '1.5rem 3rem',
         }}
       >
-        ECH<span style={{ color: 'var(--gold)' }}>O</span>ES
-      </a>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
         <a
-          href="#how"
+          href="/"
           style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '0.68rem',
-            letterSpacing: '0.1em',
-            color: 'var(--text3)',
+            fontFamily: "'Cormorant Garamond', serif",
+            fontWeight: 300,
+            fontSize: '1.1rem',
+            letterSpacing: '0.35em',
+            textTransform: 'uppercase',
+            color: 'var(--text)',
             textDecoration: 'none',
           }}
         >
-          How it works
+          ECH<span style={{ color: 'var(--gold)' }}>O</span>ES
         </a>
-        <a
-          href="#voices"
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '0.68rem',
-            letterSpacing: '0.1em',
-            color: 'var(--text3)',
-            textDecoration: 'none',
-          }}
-        >
-          Voices
-        </a>
-        <Link
-          href="/map"
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: '0.68rem',
-            letterSpacing: '0.1em',
-            color: 'var(--gold)',
-            border: '1px solid rgba(200,169,110,0.3)',
-            padding: '0.5rem 1.2rem',
-            borderRadius: '2px',
-            textDecoration: 'none',
-          }}
-        >
-          Explore New York
-        </Link>
-      </div>
-    </nav>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
+          <button className="nav-link" onClick={() => scrollTo('how')}>
+            How it works
+          </button>
+          <button className="nav-link" onClick={() => scrollTo('voices')}>
+            Voices
+          </button>
+          <a href="/map" className="nav-explore" onClick={goToMap}>
+            Explore New York
+          </a>
+        </div>
+      </nav>
+    </>
   );
 }

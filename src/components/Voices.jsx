@@ -58,6 +58,7 @@ export default function Voices() {
           {voices.map((v, i) => (
             <div
               key={i}
+              className="reveal-child"
               style={{
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
