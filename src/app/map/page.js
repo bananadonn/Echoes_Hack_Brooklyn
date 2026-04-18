@@ -301,7 +301,10 @@ export default function MapPage() {
   const introAudioRef = useRef(null);
   const canvasRef = useRef(null);
   const animFrameRef = useRef(null);
-  const waveformRef = useRef(null); // { audioCtx, analyser }
+  const waveformRef = useRef(null);
+  const trailPointsRef = useRef([]); // [{lat,lng}] — visited locations
+  const trailLineRef = useRef(null); // Leaflet polyline
+  const trailDotsRef = useRef([]);   // Leaflet circleMarkers
 
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -391,6 +394,34 @@ export default function MapPage() {
     );
   };
 
+  const addToTrail = (lat, lng) => {
+    if (!window.L || !mapRef.current) return;
+    const L = window.L;
+    trailPointsRef.current.push([lat, lng]);
+
+    // Persistent small dot for this location
+    const dot = L.circleMarker([lat, lng], {
+      radius: 3,
+      fillColor: '#c8a96e',
+      fillOpacity: 0.7,
+      color: '#c8a96e',
+      weight: 1,
+      opacity: 0,
+    }).addTo(mapRef.current);
+    trailDotsRef.current.push(dot);
+
+    // Redraw dashed polyline connecting all visited points
+    if (trailLineRef.current) trailLineRef.current.remove();
+    if (trailPointsRef.current.length >= 2) {
+      trailLineRef.current = L.polyline(trailPointsRef.current, {
+        color: '#c8a96e',
+        weight: 1,
+        opacity: 0.35,
+        dashArray: '3 7',
+      }).addTo(mapRef.current);
+    }
+  };
+
   const fetchStory = async (address, lat, lng) => {
     setLoading(true);
     setError(null);
@@ -436,6 +467,7 @@ export default function MapPage() {
       geocodeData.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     const data = await fetchStory(address, lat, lng);
     if (!data) return;
+    addToTrail(lat, lng);
     setTimeout(() => {
       if (data.introAudio && introAudioRef.current) {
         introAudioRef.current.play().catch(() => {});
@@ -476,6 +508,7 @@ export default function MapPage() {
     const data = await fetchStory(query + ', New York City', lat, lng);
     setSearching(false);
     if (!data) return;
+    addToTrail(lat, lng);
     setTimeout(() => {
       if (data.introAudio && introAudioRef.current) {
         introAudioRef.current.play().catch(() => {});
