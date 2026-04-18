@@ -316,6 +316,7 @@ export default function MapPage() {
   const [searching, setSearching] = useState(false);
   const [showHotspots, setShowHotspots] = useState(true);
   const [sources, setSources] = useState([]);
+  const [nextEchoes, setNextEchoes] = useState(null);
   const [language, setLanguage] = useState('en');
   const languageRef = useRef('en');
   const handleLocationClickRef = useRef(null);
@@ -422,6 +423,41 @@ export default function MapPage() {
     }
   };
 
+  const milеsBetween = (lat1, lng1, lat2, lng2) => {
+    const R = 3959;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  const getNextEchoes = (currentLat, currentLng, currentEra) => {
+    const currentDecade = parseInt((currentEra || '').match(/\d{4}/)?.[0] ?? '0');
+    return HOTSPOTS
+      .map((spot) => {
+        const dist = milеsBetween(currentLat, currentLng, spot.lat, spot.lng);
+        const alreadyVisited = trailPointsRef.current.some(
+          ([lat, lng]) => milеsBetween(lat, lng, spot.lat, spot.lng) < 0.15,
+        );
+        const spotDecade = parseInt(spot.hint.match(/\d{4}/)?.[0] ?? '0');
+        const yearGap = currentDecade && spotDecade ? Math.abs(currentDecade - spotDecade) : null;
+        const connection =
+          yearGap === null ? spot.hint
+          : yearGap <= 10 ? `same era · ${spot.hint.split('·')[1]?.trim() ?? spot.hint}`
+          : yearGap <= 30 ? `${yearGap} years later · ${spot.hint.split('·')[1]?.trim() ?? spot.hint}`
+          : spot.hint;
+        return { ...spot, dist, alreadyVisited, connection };
+      })
+      .filter((s) => !s.alreadyVisited && s.dist > 0.1)
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, 3)
+      .map((s) => ({ ...s, distLabel: s.dist < 1 ? `${(s.dist * 5280).toFixed(0)} ft` : `${s.dist.toFixed(1)} mi` }));
+  };
+
   const fetchStory = async (address, lat, lng) => {
     setLoading(true);
     setError(null);
@@ -429,6 +465,7 @@ export default function MapPage() {
     setIsPlaying(false);
     setPlayingIntro(false);
     setSources([]);
+    setNextEchoes(null);
 
     try {
       const res = await fetch('/api/story', {
@@ -1077,6 +1114,10 @@ export default function MapPage() {
                   onEnded={() => {
                     setIsPlaying(false);
                     stopWaveform();
+                    if (story.coordinates) {
+                      const echoes = getNextEchoes(story.coordinates.lat, story.coordinates.lng, story.era);
+                      if (echoes.length) setNextEchoes(echoes);
+                    }
                   }}
                   onPlay={() => {
                     setIsPlaying(true);
@@ -1203,6 +1244,49 @@ export default function MapPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Connected Echoes */}
+                  {nextEchoes && (
+                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(200,169,110,0.12)', animation: 'fadeInSource 0.5s ease forwards' }}>
+                      <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.54rem', color: 'rgba(200,169,110,0.6)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
+                        Continue the story —
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {nextEchoes.map((spot, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              setNextEchoes(null);
+                              mapRef.current?.setView([spot.lat, spot.lng], 15, { animate: true });
+                              handleLocationClickRef.current?.(spot.lat, spot.lng);
+                            }}
+                            style={{
+                              flex: '1 1 140px',
+                              background: 'rgba(200,169,110,0.04)',
+                              border: '1px solid rgba(200,169,110,0.18)',
+                              borderRadius: '3px',
+                              padding: '0.65rem 0.75rem',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s, border-color 0.2s',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(200,169,110,0.1)'; e.currentTarget.style.borderColor = 'rgba(200,169,110,0.4)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(200,169,110,0.04)'; e.currentTarget.style.borderColor = 'rgba(200,169,110,0.18)'; }}
+                          >
+                            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '0.95rem', fontWeight: 300, color: '#f0ede8', marginBottom: '0.25rem', lineHeight: 1.2 }}>
+                              {spot.name}
+                            </div>
+                            <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.52rem', color: 'rgba(200,169,110,0.7)', lineHeight: 1.5 }}>
+                              {spot.connection}
+                            </div>
+                            <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.5rem', color: 'rgba(255,255,255,0.28)', marginTop: '0.3rem' }}>
+                              {spot.distLabel} away →
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
