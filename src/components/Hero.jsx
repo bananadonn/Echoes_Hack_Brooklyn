@@ -152,8 +152,16 @@ export default function Hero() {
             animation: 'fadeUp .8s .9s ease forwards',
           }}
         >
-          <Link href="/map" className="btn-primary">
-            Explore the map →
+          <Link
+            href="/map"
+            className="nav-explore"
+            style={{
+              fontSize: '0.72rem',
+              padding: '0.7rem 1.75rem',
+              letterSpacing: '0.14em',
+            }}
+          >
+            Start Exploring →
           </Link>
         </div>
 
@@ -293,7 +301,20 @@ export default function Hero() {
                 { top: '54%', left: '52%', label: 'DEGRAW ST' },
                 { top: '24%', left: '38%', label: 'UNION ST' },
               ].map((s, i) => (
-                <div key={i} style={{ position: 'absolute', top: s.top, left: s.left, fontFamily: "'DM Mono',monospace", fontSize: '0.42rem', color: 'rgba(255,255,255,0.22)', letterSpacing: '0.08em', whiteSpace: 'nowrap', transform: 'translateY(-50%)' }}>
+                <div
+                  key={i}
+                  style={{
+                    position: 'absolute',
+                    top: s.top,
+                    left: s.left,
+                    fontFamily: "'DM Mono',monospace",
+                    fontSize: '0.42rem',
+                    color: 'rgba(255,255,255,0.22)',
+                    letterSpacing: '0.08em',
+                    whiteSpace: 'nowrap',
+                    transform: 'translateY(-50%)',
+                  }}
+                >
                   {s.label}
                 </div>
               ))}
@@ -302,7 +323,21 @@ export default function Hero() {
                 { top: '18%', left: '33%', label: 'SMITH ST' },
                 { top: '62%', left: '66%', label: 'NEVINS ST' },
               ].map((s, i) => (
-                <div key={i} style={{ position: 'absolute', top: s.top, left: s.left, fontFamily: "'DM Mono',monospace", fontSize: '0.42rem', color: 'rgba(255,255,255,0.22)', letterSpacing: '0.08em', whiteSpace: 'nowrap', transform: 'rotate(90deg) translateX(-50%)', transformOrigin: 'left center' }}>
+                <div
+                  key={i}
+                  style={{
+                    position: 'absolute',
+                    top: s.top,
+                    left: s.left,
+                    fontFamily: "'DM Mono',monospace",
+                    fontSize: '0.42rem',
+                    color: 'rgba(255,255,255,0.22)',
+                    letterSpacing: '0.08em',
+                    whiteSpace: 'nowrap',
+                    transform: 'rotate(90deg) translateX(-50%)',
+                    transformOrigin: 'left center',
+                  }}
+                >
                   {s.label}
                 </div>
               ))}
