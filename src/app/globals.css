@@ -98,7 +98,7 @@ body::before {
 .section-num {
   font-family: 'DM Mono', monospace;
   font-size: 0.62rem;
-  color: var(--text3);
+  color: var(--text2);
   letter-spacing: 0.12em;
   margin-bottom: 1rem;
 }
@@ -147,10 +147,26 @@ html {
   transition: opacity 0.55s ease, transform 0.55s ease;
 }
 
-.reveal.visible .reveal-child:nth-child(1) { opacity: 1; transform: none; transition-delay: 0.1s; }
-.reveal.visible .reveal-child:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.22s; }
-.reveal.visible .reveal-child:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.34s; }
-.reveal.visible .reveal-child:nth-child(4) { opacity: 1; transform: none; transition-delay: 0.46s; }
+.reveal.visible .reveal-child:nth-child(1) {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.1s;
+}
+.reveal.visible .reveal-child:nth-child(2) {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.22s;
+}
+.reveal.visible .reveal-child:nth-child(3) {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.34s;
+}
+.reveal.visible .reveal-child:nth-child(4) {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.46s;
+}
 
 /* nav links */
 .nav-link {
@@ -178,8 +194,12 @@ html {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.nav-link:hover { color: var(--text); }
-.nav-link:hover::after { width: 100%; }
+.nav-link:hover {
+  color: var(--text);
+}
+.nav-link:hover::after {
+  width: 100%;
+}
 
 /* explore button */
 .nav-explore {
@@ -193,7 +213,8 @@ html {
   text-decoration: none;
   background: transparent;
   cursor: pointer;
-  transition: background 0.3s, border-color 0.3s, transform 0.2s, box-shadow 0.3s;
+  transition: background 0.3s, border-color 0.3s, transform 0.2s,
+    box-shadow 0.3s;
   display: inline-block;
 }
 
@@ -206,8 +227,12 @@ html {
 
 /* page-exit overlay */
 @keyframes curtainDown {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .page-exit-overlay {
@@ -256,7 +281,7 @@ html {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(200,169,110,0.25),
+    rgba(200, 169, 110, 0.25),
     transparent
   );
 }
@@ -272,7 +297,7 @@ html {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(232,201,142,0.9),
+    rgba(232, 201, 142, 0.9),
     transparent
   );
   filter: blur(2px);
@@ -333,7 +358,9 @@ html {
 }
 
 @keyframes messengerBounce {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
     opacity: 0.35;
   }

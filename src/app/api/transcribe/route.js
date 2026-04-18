@@ -4,9 +4,11 @@ export async function POST(req) {
     const audio = formData.get('audio');
     if (!audio) return Response.json({ error: 'No audio' }, { status: 400 });
 
+    const language = formData.get('language') || 'en';
     const elForm = new FormData();
     elForm.append('file', audio, 'recording.webm');
     elForm.append('model_id', 'scribe_v1');
+    elForm.append('language_code', language);
 
     const res = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
       method: 'POST',

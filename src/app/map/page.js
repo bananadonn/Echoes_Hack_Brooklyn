@@ -14,6 +14,8 @@ const LANGUAGES = [
   { code: 'ko', label: '한국어', name: 'Korean' },
   { code: 'it', label: 'IT', name: 'Italiano' },
   { code: 'pt', label: 'PT', name: 'Português' },
+  { code: 'ur', label: 'اردو', name: 'Urdu' },
+  { code: 'hi', label: 'हिन्दी', name: 'Hindi' },
 ];
 
 const HOTSPOTS = [
@@ -544,6 +546,7 @@ export default function MapPage() {
           const blob = new Blob(chunks, { type: mimeType });
           const form = new FormData();
           form.append('audio', blob, 'recording.webm');
+          form.append('language', languageRef.current);
           const res = await fetch('/api/transcribe', { method: 'POST', body: form });
           const data = await res.json();
           if (data.transcript) {
