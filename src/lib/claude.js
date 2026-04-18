@@ -5,6 +5,7 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const LANGUAGE_NAMES = {
   en: 'English', es: 'Spanish', zh: 'Mandarin Chinese',
   ru: 'Russian', fr: 'French', ko: 'Korean', it: 'Italian', pt: 'Portuguese',
+  ur: 'Urdu', hi: 'Hindi',
 };
 
 export async function generateStory(address, research, summary, language = 'en') {

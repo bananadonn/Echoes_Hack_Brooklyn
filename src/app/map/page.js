@@ -14,6 +14,8 @@ const LANGUAGES = [
   { code: 'ko', label: '한국어', name: 'Korean' },
   { code: 'it', label: 'IT', name: 'Italiano' },
   { code: 'pt', label: 'PT', name: 'Português' },
+  { code: 'ur', label: 'اردو', name: 'Urdu' },
+  { code: 'hi', label: 'हिन्दी', name: 'Hindi' },
 ];
 
 const HOTSPOTS = [
@@ -320,6 +322,9 @@ export default function MapPage() {
   const [language, setLanguage] = useState('en');
   const languageRef = useRef('en');
   const handleLocationClickRef = useRef(null);
+  const [listening, setListening] = useState(false);
+  const listeningRef = useRef(false);
+  const recognitionRef = useRef(null);
 
   // Keep refs current every render so stale Leaflet closures always read latest values
   languageRef.current = language;
@@ -517,35 +522,123 @@ export default function MapPage() {
 
   handleLocationClickRef.current = handleLocationClick;
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!search.trim()) return;
+  const startVoiceSearch = async () => {
+    if (listeningRef.current) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const chunks = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recognitionRef.current = recorder;
+      listeningRef.current = true;
+      setListening(true);
+
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        listeningRef.current = false;
+        setListening(false);
+        setSearching(true);
+        try {
+          const blob = new Blob(chunks, { type: mimeType });
+          const form = new FormData();
+          form.append('audio', blob, 'recording.webm');
+          form.append('language', languageRef.current);
+          const res = await fetch('/api/transcribe', { method: 'POST', body: form });
+          const data = await res.json();
+          if (data.transcript) {
+            setSearch(data.transcript);
+            runSearch(data.transcript);
+          } else {
+            setSearching(false);
+            setError("Couldn't understand that. Try again.");
+          }
+        } catch {
+          setSearching(false);
+          setError('Transcription failed. Try again.');
+        }
+      };
+
+      // Silence detection — stop ~800ms after speech ends
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+      const buf = new Uint8Array(analyser.frequencyBinCount);
+      let speechDetected = false;
+      let silenceStart = null;
+      const SILENCE_THRESHOLD = 8;
+      const SILENCE_DURATION = 800;
+      const MAX_DURATION = 8000;
+      const started = Date.now();
+
+      const checkSilence = () => {
+        if (recorder.state !== 'recording') { audioCtx.close(); return; }
+        analyser.getByteFrequencyData(buf);
+        const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
+        if (avg > SILENCE_THRESHOLD) { speechDetected = true; silenceStart = null; }
+        else if (speechDetected) {
+          if (!silenceStart) silenceStart = Date.now();
+          if (Date.now() - silenceStart > SILENCE_DURATION) { audioCtx.close(); recorder.stop(); return; }
+        }
+        if (Date.now() - started > MAX_DURATION) { audioCtx.close(); recorder.stop(); return; }
+        requestAnimationFrame(checkSilence);
+      };
+      requestAnimationFrame(checkSilence);
+
+      recorder.start();
+    } catch (e) {
+      listeningRef.current = false;
+      setListening(false);
+      setError('Microphone access denied. Please allow mic permissions.');
+    }
+  };
+
+  const runSearch = async (query) => {
+    if (!query) return;
     setSearching(true);
-    const query = search.trim();
     setSearch('');
 
-    // Geocode first so the map moves and marker appears immediately
     let lat = BROOKLYN_CENTER[0];
     let lng = BROOKLYN_CENTER[1];
+    let geocoded = false;
+
     try {
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
           query + ' New York City',
-        )}&format=json&limit=1`,
+        )}&format=json&limit=1&bounded=1&viewbox=-74.2591,40.4774,-73.7004,40.9176`,
       );
       const geo = await geoRes.json();
       if (geo.length > 0) {
-        lat = parseFloat(geo[0].lat);
-        lng = parseFloat(geo[0].lon);
-        mapRef.current?.setView([lat, lng], 16, { animate: true });
-        placeMarker(lat, lng);
+        const gLat = parseFloat(geo[0].lat);
+        const gLng = parseFloat(geo[0].lon);
+        if (gLat >= 40.4774 && gLat <= 40.9176 && gLng >= -74.2591 && gLng <= -73.7004) {
+          lat = gLat; lng = gLng; geocoded = true;
+          mapRef.current?.setView([lat, lng], 16, { animate: true });
+          placeMarker(lat, lng);
+        }
       }
     } catch {}
 
     const data = await fetchStory(query + ', New York City', lat, lng);
     setSearching(false);
     if (!data) return;
-    addToTrail(lat, lng);
+
+    // If geocoding failed, navigate using coordinates returned by the story API
+    if (!geocoded && data.coordinates?.lat && data.coordinates?.lng) {
+      const { lat: sLat, lng: sLng } = data.coordinates;
+      mapRef.current?.setView([sLat, sLng], 16, { animate: true });
+      placeMarker(sLat, sLng);
+      addToTrail(sLat, sLng);
+    } else {
+      addToTrail(lat, lng);
+    }
+
     setTimeout(() => {
       if (data.introAudio && introAudioRef.current) {
         introAudioRef.current.play().catch(() => {});
@@ -554,6 +647,11 @@ export default function MapPage() {
         setIsPlaying(true);
       }
     }, 400);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    runSearch(search.trim());
   };
 
   const togglePlay = () => {
@@ -773,6 +871,39 @@ export default function MapPage() {
                 letterSpacing: '0.02em',
               }}
             />
+            <button
+              type="button"
+              onClick={() => listeningRef.current ? recognitionRef.current?.stop() : startVoiceSearch()}
+              title={listening ? 'Stop recording' : 'Search by voice'}
+              style={{
+                background: listening ? 'rgba(200,169,110,0.18)' : 'rgba(20,20,25,0.97)',
+                border: `1px solid ${listening ? 'rgba(200,169,110,0.6)' : 'rgba(200,169,110,0.2)'}`,
+                borderRadius: '3px',
+                padding: '0.65rem 0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'background 0.2s, border-color 0.2s',
+              }}
+            >
+              {listening ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="5" fill="#c8a96e" opacity="0.9">
+                    <animate attributeName="r" values="5;8;5" dur="1s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.9;0.4;0.9" dur="1s" repeatCount="indefinite"/>
+                  </circle>
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a96e" strokeWidth="1.5" strokeLinecap="round">
+                  <rect x="9" y="2" width="6" height="11" rx="3"/>
+                  <path d="M5 10a7 7 0 0 0 14 0"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                  <line x1="9" y1="21" x2="15" y2="21"/>
+                </svg>
+              )}
+            </button>
             <button
               type="submit"
               disabled={searching}
@@ -1043,27 +1174,18 @@ export default function MapPage() {
         Searching the archives
       </span>
 
-      <div style={{ display: 'flex', gap: '0.35rem' }}>
-        {[0, 1, 2].map((i) => (
-          <div
-            key={`right-${i}`}
-            style={{
-              width: '5px',
-              height: '5px',
-              borderRadius: '50%',
-              background: '#c8a96e',
-              animation: `dotWave 1.2s ease-in-out ${i * 0.2}s infinite`,
-            }}
-          />
-        ))}
-      </div>
+      <div className="messenger-typing">
+  <div className="messenger-dot" style={{ animationDelay: '0s' }} />
+  <div className="messenger-dot" style={{ animationDelay: '0.18s' }} />
+  <div className="messenger-dot" style={{ animationDelay: '0.36s' }} />
+</div>
     </div>
 
     <div
       style={{
         fontFamily: "'DM Mono',monospace",
         fontSize: '0.58rem',
-        color: 'rgba(200,169,110,0.4)',
+        color: '#c8a96e',
         letterSpacing: '0.04em',
         marginTop: '0.35rem',
       }}
