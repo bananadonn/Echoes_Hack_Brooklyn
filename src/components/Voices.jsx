@@ -158,29 +158,27 @@ export default function Voices() {
             flexWrap: 'wrap',
           }}
         >
-          {['ElevenLabs', 'Tavily', 'Featherless.ai', 'Hack Brooklyn 2026'].map(
-            (s) => (
-              <span
-                key={s}
-                style={{
-                  fontFamily: "'DM Mono',monospace",
-                  fontSize: '0.68rem',
-                  letterSpacing: '0.06em',
-                  color: 'rgba(255,255,255,0.15)',
-                  cursor: 'default',
-                  transition: 'color .3s',
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')
-                }
-              >
-                {s}
-              </span>
-            ),
-          )}
+          {['ElevenLabs', 'Tavily', 'Hack Brooklyn 2026'].map((s) => (
+            <span
+              key={s}
+              style={{
+                fontFamily: "'DM Mono',monospace",
+                fontSize: '0.68rem',
+                letterSpacing: '0.06em',
+                color: 'rgba(255,255,255,0.15)',
+                cursor: 'default',
+                transition: 'color .3s',
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')
+              }
+            >
+              {s}
+            </span>
+          ))}
         </div>
       </div>
     </>
