@@ -22,9 +22,9 @@ export async function researchLocation(address, lat, lng) {
     const allResults = results.flatMap((r) => r.results);
 
     const sources = allResults
-      .slice(0, 5)
-      .map((r) => r.title)
-      .filter(Boolean);
+      .slice(0, 4)
+      .map((r) => ({ title: r.title, url: r.url, snippet: r.content?.slice(0, 120) }))
+      .filter((s) => s.title && s.url);
 
     const combined = allResults
       .map((r) => `${r.title}: ${r.content}`)
@@ -49,9 +49,9 @@ export async function researchLocation(address, lat, lng) {
         .join('\n\n'),
       summary: fallback.answer || '',
       sources: fallback.results
-        .slice(0, 5)
-        .map((r) => r.title)
-        .filter(Boolean),
+        .slice(0, 4)
+        .map((r) => ({ title: r.title, url: r.url, snippet: r.content?.slice(0, 120) }))
+        .filter((s) => s.title && s.url),
     };
   }
 }

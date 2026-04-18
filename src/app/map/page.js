@@ -554,8 +554,16 @@ export default function MapPage() {
     if (waveformRef.current.audioCtx.state === 'suspended') {
       waveformRef.current.audioCtx.resume();
     }
-    // canvas may not be mounted yet (intro still showing) — drawBars handles that
-    if (canvasRef.current) drawBars();
+    // Canvas may not be mounted yet (intro still rendering).
+    // Poll via rAF — animFrameRef tracks it so stopWaveform cancels cleanly.
+    const waitForCanvas = () => {
+      if (canvasRef.current) {
+        drawBars();
+      } else {
+        animFrameRef.current = requestAnimationFrame(waitForCanvas);
+      }
+    };
+    waitForCanvas();
   };
 
   const stopWaveform = () => {
@@ -568,20 +576,6 @@ export default function MapPage() {
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
   };
-
-  // When the canvas mounts (intro ends → !playingIntro renders the canvas),
-  // kick off the draw loop if audio is already playing.
-  useEffect(() => {
-    if (
-      !playingIntro &&
-      isPlaying &&
-      waveformRef.current &&
-      canvasRef.current &&
-      !animFrameRef.current
-    ) {
-      drawBars();
-    }
-  }, [playingIntro, isPlaying]);
 
   const isAnyPlaying = isPlaying || playingIntro;
 
@@ -1096,12 +1090,48 @@ export default function MapPage() {
                       <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.54rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.75rem', lineHeight: 1.5 }}>
                         {story.address_display}
                       </div>
+
+                      {/* Sources in left column */}
+                      {sources.length > 0 && (
+                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.5rem', color: 'rgba(200,169,110,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                            Sources
+                          </div>
+                          {sources.map((s, i) => (
+                            <a
+                              key={i}
+                              href={s.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'block',
+                                marginBottom: '0.4rem',
+                                padding: '0.45rem 0.6rem',
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.07)',
+                                borderRadius: '2px',
+                                textDecoration: 'none',
+                                transition: 'border-color 0.2s, background 0.2s',
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(200,169,110,0.3)'; e.currentTarget.style.background = 'rgba(200,169,110,0.05)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                            >
+                              <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.48rem', color: 'rgba(200,169,110,0.55)', letterSpacing: '0.04em', marginBottom: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {(() => { try { return new URL(s.url).hostname.replace('www.', ''); } catch { return s.url; } })()}
+                              </div>
+                              <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.52rem', color: 'rgba(255,255,255,0.72)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                {s.title}
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Vertical divider */}
                     <div style={{ width: '1px', background: 'rgba(200,169,110,0.18)', flexShrink: 0 }} />
 
-                    {/* Right: title + story + player */}
+                    {/* Right: title + story + player + context */}
                     <div style={{ flex: 1, paddingLeft: '1.25rem', minWidth: 0 }}>
                       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '1.25rem', fontWeight: 300, color: '#f0ede8', marginBottom: '0.5rem', lineHeight: 1.2 }}>
                         {story.title}
@@ -1133,27 +1163,13 @@ export default function MapPage() {
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Context — full width below columns */}
-                  <div style={{ marginTop: '0.5rem', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, letterSpacing: '0.02em' }}>
-                    {story.context}
-                  </div>
-
-                  {sources.length > 0 && (
-                    <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.54rem', color: 'rgba(200,169,110,0.8)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-                        Sources
+                      {/* Context */}
+                      <div style={{ marginTop: '0.75rem', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, letterSpacing: '0.02em' }}>
+                        {story.context}
                       </div>
-                      {sources.map((s, i) => (
-                        <div key={i} style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.56rem', color: 'rgba(255,255,255,0.7)', padding: '0.15rem 0', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                          <span style={{ color: 'rgba(200,169,110,0.6)', flexShrink: 0 }}>·</span>
-                          {s}
-                        </div>
-                      ))}
                     </div>
-                  )}
+                  </div>
                 </>
               )}
             </div>
