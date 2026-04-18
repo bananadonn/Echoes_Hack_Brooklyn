@@ -22,7 +22,7 @@ const members = [
     name: 'Tahreem',
     school: 'Brooklyn College',
 
-    linkedin: 'www.linkedin.com/in/tahreemimran04',
+    linkedin: 'https://www.linkedin.com/in/tahreemimran04',
     x: '35%',
     y: '68%',
   },
