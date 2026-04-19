@@ -56,69 +56,56 @@ The story panel slides up with the quote, animated waveform, context text, and a
 ## Architecture
 
 ```mermaid
-flowchart TD
-    subgraph USER["User Input"]
-        A1[Map Tap]
-        A2[Text Search]
-        A3[Voice Input]
+graph TD
+    classDef user fill:#111114,stroke:#c8a96e,stroke-width:2px,color:#c8a96e
+    classDef input fill:#1a1a1f,stroke:#c8a96e,stroke-width:1px,color:#f0ede8
+    classDef route fill:#1a1a1f,stroke:#e8c98e,stroke-width:1px,color:#e8c98e
+    classDef ai fill:#1a1a1f,stroke:#c8a96e,stroke-width:1px,color:#c8a96e
+    classDef voice fill:#1a1a1f,stroke:#52b788,stroke-width:1px,color:#52b788
+    classDef map fill:#1a1a1f,stroke:#b8b4ae,stroke-width:1px,color:#b8b4ae
+    classDef ui fill:#1a1a1f,stroke:#e8c98e,stroke-width:1px,color:#f0ede8
+    classDef deploy fill:#111114,stroke:#7a7672,stroke-dasharray:5,color:#7a7672
+
+    U(["👤 User"]):::user
+    U --> I1 & I2 & I3
+
+    I1["🗺️ Map Tap"]:::input
+    I2["⌨️ Text Search"]:::input
+    I3["🎙️ Voice"]:::input
+
+    I3 --> MR["MediaRecorder API"]:::map
+    MR --> A2["/api/transcribe"]:::route
+    A2 --> ES["ElevenLabs Scribe\nscribe_v1"]:::voice
+    ES -->|transcript| A1
+
+    I1 --> LF["Leaflet.js\nCartoDB Tiles"]:::map
+    LF --> NOM["Nominatim\nGeocoding"]:::map
+    NOM -->|address| A1
+
+    I2 --> A1
+    I2 -.->|background map move| NOM
+
+    A1["/api/story"]:::route
+    A1 --> TAV["Tavily\nWeb Research"]:::ai
+    TAV -->|sources| CL["Claude Sonnet\nStory Generation"]:::ai
+    CL -->|narrative JSON| A1
+    A1 -->|parallel generation| EL["ElevenLabs TTS\neleven_multilingual_v2"]:::voice
+
+    subgraph UI[" Story UI "]
+        F1["Story Card"]:::ui
+        F2["Waveform Player"]:::ui
+        F3["Sources Panel"]:::ui
+        F4["Continue the Story"]:::ui
+        F5["Exploration Trail"]:::ui
     end
 
-    subgraph FRONTEND["Frontend — Next.js + Leaflet.js"]
-        B1[Map Page]
-        B2[Story Panel]
-        B3[Voice Recorder]
-    end
+    A1 -->|story + metadata| F1
+    A1 -->|citations| F3
+    A1 -->|coordinates| F4
+    F4 --> F5
+    EL -->|base64 audio| F2
 
-    subgraph API["API Layer — Next.js App Router on Vercel"]
-        C1[api/story — Main pipeline]
-        C2[api/transcribe — STT]
-        C3[api/geocode — Address lookup]
-    end
-
-    subgraph SERVICES["External Services"]
-        D1[Tavily — Live web research]
-        D2[Claude API — Narrative generation]
-        D3[ElevenLabs TTS — Voice synthesis]
-        D4[ElevenLabs Scribe — Speech to text]
-        D5[Nominatim — Reverse geocoding]
-    end
-
-    subgraph OUTPUT["Output"]
-        E1[Intro audio]
-        E2[Story audio]
-        E3[Story card]
-        E4[Sources panel]
-        E5[Echo trail]
-    end
-
-    A1 --> B1
-    A2 --> B1
-    A3 --> B3
-
-    B1 --> C1
-    B1 --> C3
-    B3 --> C2
-
-    C2 --> D4
-    D4 --> C1
-
-    C3 --> D5
-    D5 --> C1
-
-    C1 --> D1
-    C1 --> D2
-    C1 --> D3
-
-    D1 -->|Historical sources| D2
-    D2 -->|Narrative and persona| D3
-    D3 -->|Base64 audio| B2
-    C1 --> B2
-
-    B2 --> E1
-    B2 --> E2
-    B2 --> E3
-    B2 --> E4
-    B1 --> E5
+    UI -.->|deployed on| V["☁️ Vercel"]:::deploy
 ```
 
 ---
