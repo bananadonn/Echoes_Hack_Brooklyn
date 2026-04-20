@@ -5,14 +5,17 @@ import { useState } from 'react';
 export default function Navbar() {
   const router = useRouter();
   const [exiting, setExiting] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const scrollTo = (id) => {
+    setMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const goToMap = (e) => {
     e.preventDefault();
     if (exiting) return;
+    setMenuOpen(false);
     setExiting(true);
     setTimeout(() => router.push('/map'), 580);
   };
@@ -20,7 +23,22 @@ export default function Navbar() {
   return (
     <>
       {exiting && <div className="page-exit-overlay" />}
+
+      {/* Mobile full-screen menu overlay */}
+      <div className={`nav-mobile-overlay${menuOpen ? ' open' : ''}`}>
+        <button className="nav-link" onClick={() => scrollTo('how')}>
+          How it works
+        </button>
+        <button className="nav-link" onClick={() => scrollTo('voices')}>
+          Voices
+        </button>
+        <a href="/map" className="nav-explore" onClick={goToMap}>
+          Explore New York
+        </a>
+      </div>
+
       <nav
+        className="site-nav"
         style={{
           position: 'fixed',
           top: 0,
@@ -47,7 +65,9 @@ export default function Navbar() {
         >
           ECH<span style={{ color: 'var(--gold)' }}>O</span>ES
         </a>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
+
+        {/* Desktop nav links */}
+        <div className="nav-links-desktop" style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
           <button className="nav-link" onClick={() => scrollTo('how')}>
             How it works
           </button>
@@ -58,6 +78,17 @@ export default function Navbar() {
             Explore New York
           </a>
         </div>
+
+        {/* Hamburger button (mobile only) */}
+        <button
+          className="nav-hamburger"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+        >
+          <span style={{ transform: menuOpen ? 'rotate(45deg) translate(4px, 4px)' : '' }} />
+          <span style={{ opacity: menuOpen ? 0 : 1 }} />
+          <span style={{ transform: menuOpen ? 'rotate(-45deg) translate(4px, -4px)' : '' }} />
+        </button>
       </nav>
     </>
   );

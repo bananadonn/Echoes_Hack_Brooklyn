@@ -48,6 +48,7 @@ export default function Voices() {
         </p>
 
         <div
+          className="voices-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(2,1fr)',
@@ -128,6 +129,7 @@ export default function Voices() {
 
       {/* Sponsors */}
       <div
+        className="sponsors-bar"
         style={{
           borderTop: '1px solid var(--border)',
           borderBottom: '1px solid var(--border)',
@@ -165,7 +167,7 @@ export default function Voices() {
                 fontFamily: "'DM Mono',monospace",
                 fontSize: '0.68rem',
                 letterSpacing: '0.06em',
-                color: 'rgba(255,255,255,0.15)',
+                color: 'rgba(255,255,255,0.7)',
                 cursor: 'default',
                 transition: 'color .3s',
               }}

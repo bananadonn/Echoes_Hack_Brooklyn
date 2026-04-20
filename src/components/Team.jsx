@@ -61,6 +61,7 @@ export default function Team() {
 
       {/* Map canvas */}
       <div
+        id="team-map"
         style={{
           position: 'relative',
           margin: '0 3rem 6rem',

@@ -55,6 +55,12 @@ export default function Hero() {
         @keyframes dotPulse { 0%,100%{opacity:0;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.5)} }
         @keyframes pinPulse { 0%,100%{box-shadow:0 0 0 0 var(--gold-glow)} 50%{box-shadow:0 0 0 12px transparent} }
         @keyframes waveAnim { from{transform:scaleY(0.3)} to{transform:scaleY(1)} }
+        @media (max-width: 640px) {
+          .hero-demo-two-col { flex-direction: column !important; }
+          .hero-demo-narrator-col { width: 100% !important; padding-right: 0 !important; padding-bottom: 1rem !important; border-bottom: 1px solid rgba(200,169,110,0.12); }
+          .hero-demo-divider-v { display: none !important; }
+          .hero-demo-right-col { padding-left: 0 !important; padding-top: 1rem !important; }
+        }
       `}</style>
 
       <div
@@ -396,9 +402,10 @@ export default function Hero() {
                   'linear-gradient(to top,rgba(14,14,18,0.99) 0%,rgba(14,14,18,0.92) 100%)',
               }}
             >
-              <div style={{ display: 'flex', gap: 0 }}>
+              <div className="hero-demo-two-col" style={{ display: 'flex', gap: 0 }}>
                 {/* Left: narrator info + sources */}
                 <div
+                  className="hero-demo-narrator-col"
                   style={{
                     width: '140px',
                     flexShrink: 0,
@@ -513,6 +520,7 @@ export default function Hero() {
 
                 {/* Vertical divider */}
                 <div
+                  className="hero-demo-divider-v"
                   style={{
                     width: '1px',
                     background: 'rgba(200,169,110,0.18)',
@@ -521,7 +529,7 @@ export default function Hero() {
                 />
 
                 {/* Right: title + quote + waveform + context */}
-                <div style={{ flex: 1, paddingLeft: '1.25rem', minWidth: 0 }}>
+                <div className="hero-demo-right-col" style={{ flex: 1, paddingLeft: '1.25rem', minWidth: 0 }}>
                   <div
                     style={{
                       fontFamily: "'Cormorant Garamond',serif",

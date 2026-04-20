@@ -255,12 +255,82 @@ html {
   }
 }
 
+/* responsive layout helpers */
+.nav-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  z-index: 101;
+}
+
+.nav-hamburger span {
+  display: block;
+  width: 22px;
+  height: 1px;
+  background: var(--text2);
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+.nav-mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: rgba(17, 17, 20, 0.98);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+}
+
+.nav-mobile-overlay.open {
+  display: flex;
+}
+
+.nav-mobile-overlay .nav-link {
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+}
+
+.nav-mobile-overlay .nav-explore {
+  font-size: 0.8rem;
+  padding: 0.75rem 2rem;
+}
+
 @media (max-width: 640px) {
   .section {
     padding: 4rem 1.5rem;
   }
   .divider {
     margin: 0 1.5rem;
+  }
+  .site-nav {
+    padding: 1.25rem 1.5rem !important;
+  }
+  .nav-links-desktop {
+    display: none !important;
+  }
+  .nav-hamburger {
+    display: flex !important;
+  }
+  .howitworks-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .voices-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .sponsors-bar {
+    padding: 1.5rem !important;
+    justify-content: center !important;
+  }
+  #team-map {
+    margin: 0 1.5rem 4rem !important;
+    height: 300px !important;
   }
 }
 .archive-scan-line {

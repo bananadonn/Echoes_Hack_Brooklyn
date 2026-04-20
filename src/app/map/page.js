@@ -316,7 +316,9 @@ export default function MapPage() {
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [search, setSearch] = useState('');
   const [searching, setSearching] = useState(false);
-  const [showHotspots, setShowHotspots] = useState(true);
+  const [showHotspots, setShowHotspots] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 640 : true
+  );
   const [sources, setSources] = useState([]);
   const [nextEchoes, setNextEchoes] = useState(null);
   const [language, setLanguage] = useState('en');
@@ -769,6 +771,14 @@ export default function MapPage() {
         .hotspot-marker:hover .hotspot-label{display:block}
         input::placeholder{color:rgba(255,255,255,0.25)}
         input:focus{border-color:rgba(200,169,110,0.5)!important;outline:none}
+        .lang-scroll::-webkit-scrollbar{display:none}
+        @media (max-width:640px) {
+          .story-panel{max-height:72svh;overflow-y:auto;padding-bottom:3.5rem!important}
+          .story-two-col{flex-direction:column!important}
+          .story-narrator-col{width:100%!important;padding-right:0!important;padding-bottom:1rem!important;border-bottom:1px solid rgba(200,169,110,0.12)}
+          .story-divider-v{display:none!important}
+          .story-right-col{padding-left:0!important;padding-top:1rem}
+        }
       `}</style>
 
       <div style={{ width: '100vw', height: '100svh', position: 'relative' }}>
@@ -925,12 +935,18 @@ export default function MapPage() {
           </form>
           {/* Language selector */}
           <div
+            className="lang-scroll"
             style={{
               display: 'flex',
               gap: '0.4rem',
               marginTop: '0.6rem',
               pointerEvents: 'all',
-              flexWrap: 'wrap',
+              overflowX: 'auto',
+              flexWrap: 'nowrap',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              paddingBottom: '2px',
             }}
           >
             {LANGUAGES.map((lang) => (
@@ -1220,6 +1236,7 @@ export default function MapPage() {
 
         {/* Story panel */}
         <div
+          className="story-panel"
           style={{
             position: 'absolute',
             bottom: 0,
@@ -1293,10 +1310,10 @@ export default function MapPage() {
               {!playingIntro && (
                 <>
                   {/* Two-column layout: narrator left | story right */}
-                  <div style={{ display: 'flex', gap: 0, marginBottom: '1rem' }}>
+                  <div className="story-two-col" style={{ display: 'flex', gap: 0, marginBottom: '1rem' }}>
 
                     {/* Left: narrator info */}
-                    <div style={{ width: '130px', flexShrink: 0, paddingRight: '1.25rem' }}>
+                    <div className="story-narrator-col" style={{ width: '130px', flexShrink: 0, paddingRight: '1.25rem' }}>
                       <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c8a96e', marginBottom: '0.6rem' }}>
                         {story.era}
                       </div>
@@ -1345,10 +1362,10 @@ export default function MapPage() {
                     </div>
 
                     {/* Vertical divider */}
-                    <div style={{ width: '1px', background: 'rgba(200,169,110,0.18)', flexShrink: 0 }} />
+                    <div className="story-divider-v" style={{ width: '1px', background: 'rgba(200,169,110,0.18)', flexShrink: 0 }} />
 
                     {/* Right: title + story + player + context */}
-                    <div style={{ flex: 1, paddingLeft: '1.25rem', minWidth: 0 }}>
+                    <div className="story-right-col" style={{ flex: 1, paddingLeft: '1.25rem', minWidth: 0 }}>
                       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '1.25rem', fontWeight: 300, color: '#f0ede8', marginBottom: '0.5rem', lineHeight: 1.2 }}>
                         {story.title}
                       </div>

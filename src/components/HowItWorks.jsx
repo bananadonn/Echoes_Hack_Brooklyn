@@ -48,6 +48,7 @@ export default function HowItWorks() {
         </p>
 
         <div
+          className="howitworks-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3,1fr)',
