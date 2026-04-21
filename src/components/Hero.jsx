@@ -95,6 +95,45 @@ export default function Hero() {
           style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
         />
 
+        {/* Award banner */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            border: '1px solid rgba(200,169,110,0.35)',
+            borderRadius: '2px',
+            padding: '0.45rem 1rem',
+            marginBottom: '2rem',
+            background: 'rgba(200,169,110,0.06)',
+            opacity: 0,
+            animation: 'fadeUp .8s .1s ease forwards',
+          }}
+        >
+          <span style={{ fontSize: '0.85rem', lineHeight: 1 }}>🏆</span>
+          <span
+            style={{
+              fontFamily: "'DM Mono',monospace",
+              fontSize: '0.6rem',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--gold)',
+            }}
+          >
+            1st Place · Best Overall Hack
+          </span>
+          <span
+            style={{
+              fontFamily: "'DM Mono',monospace",
+              fontSize: '0.55rem',
+              letterSpacing: '0.08em',
+              color: 'rgba(255,255,255,0.55)',
+            }}
+          >
+            · Hack Brooklyn 2026
+          </span>
+        </div>
+
         <p
           style={{
             fontFamily: "'DM Mono',monospace",
