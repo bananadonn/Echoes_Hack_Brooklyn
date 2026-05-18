@@ -338,6 +338,11 @@ export default function MapPage() {
   const eraRef = useRef('any');
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [showEraMenu, setShowEraMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [tourMode, setTourMode] = useState(false);
+  const [tourIndex, setTourIndex] = useState(0);
+  const tourModeRef = useRef(false);
+  const tourIndexRef = useRef(0);
   const handleLocationClickRef = useRef(null);
   const [listening, setListening] = useState(false);
   const listeningRef = useRef(false);
@@ -346,6 +351,8 @@ export default function MapPage() {
   // Keep refs current every render so stale Leaflet closures always read latest values
   languageRef.current = language;
   eraRef.current = era;
+  tourModeRef.current = tourMode;
+  tourIndexRef.current = tourIndex;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -358,6 +365,23 @@ export default function MapPage() {
     script.onload = () => setLeafletLoaded(true);
     document.head.appendChild(script);
   }, []);
+
+  useEffect(() => {
+    if (!leafletLoaded) return;
+    const params = new URLSearchParams(window.location.search);
+    const lat = parseFloat(params.get('lat'));
+    const lng = parseFloat(params.get('lng'));
+    const sharedEra = params.get('era');
+    if (!isNaN(lat) && !isNaN(lng)) {
+      if (sharedEra) setEra(sharedEra);
+      setTimeout(() => {
+        mapRef.current?.setView([lat, lng], 16, { animate: false });
+        placeMarker(lat, lng);
+        handleLocationClickRef.current?.(lat, lng);
+        window.history.replaceState({}, '', window.location.pathname);
+      }, 300);
+    }
+  }, [leafletLoaded]);
 
   useEffect(() => {
     if (!leafletLoaded || !mapContainer.current || mapRef.current) return;
@@ -540,6 +564,51 @@ export default function MapPage() {
   };
 
   handleLocationClickRef.current = handleLocationClick;
+
+  const playStoryData = (data) => {
+    setTimeout(() => {
+      if (data.introAudio && introAudioRef.current) {
+        introAudioRef.current.play().catch(() => {});
+      } else if (data.audio && audioRef.current) {
+        audioRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      }
+    }, 400);
+  };
+
+  const advanceTour = async () => {
+    const nextIndex = tourIndexRef.current + 1;
+    if (nextIndex >= HOTSPOTS.length) {
+      setTourMode(false);
+      setTourIndex(0);
+      return;
+    }
+    setTourIndex(nextIndex);
+    const spot = HOTSPOTS[nextIndex];
+    mapRef.current?.setView([spot.lat, spot.lng], 15, { animate: true });
+    placeMarker(spot.lat, spot.lng);
+    const data = await fetchStory(spot.name + ', New York City', spot.lat, spot.lng);
+    if (!data) return;
+    addToTrail(spot.lat, spot.lng);
+    playStoryData(data);
+  };
+
+  const startTour = async () => {
+    if (tourModeRef.current) {
+      setTourMode(false);
+      setTourIndex(0);
+      return;
+    }
+    setTourMode(true);
+    setTourIndex(0);
+    const spot = HOTSPOTS[0];
+    mapRef.current?.setView([spot.lat, spot.lng], 15, { animate: true });
+    placeMarker(spot.lat, spot.lng);
+    const data = await fetchStory(spot.name + ', New York City', spot.lat, spot.lng);
+    if (!data) { setTourMode(false); return; }
+    addToTrail(spot.lat, spot.lng);
+    playStoryData(data);
+  };
 
   const startVoiceSearch = async () => {
     if (listeningRef.current) {
@@ -950,6 +1019,29 @@ export default function MapPage() {
               {searching ? '...' : 'Search →'}
             </button>
           </form>
+          {/* Tour button */}
+          <button
+            onClick={startTour}
+            style={{
+              marginTop: '0.6rem',
+              pointerEvents: 'all',
+              background: tourMode ? 'rgba(200,169,110,0.12)' : 'transparent',
+              border: `1px solid ${tourMode ? 'rgba(200,169,110,0.4)' : 'rgba(200,169,110,0.15)'}`,
+              borderRadius: '3px',
+              padding: '0.35rem 0.8rem',
+              fontFamily: "'DM Mono',monospace",
+              fontSize: '0.6rem',
+              color: tourMode ? '#c8a96e' : 'rgba(255,255,255,0.4)',
+              cursor: 'pointer',
+              letterSpacing: '0.06em',
+              width: '100%',
+              textAlign: 'left',
+              transition: 'all 0.15s',
+            }}
+          >
+            {tourMode ? `▶ Tour in progress · ${tourIndex + 1} / ${HOTSPOTS.length} · End ×` : '→ Start audio tour'}
+          </button>
+
           {/* Language + Era dropdowns */}
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', pointerEvents: 'all', position: 'relative' }}>
             {/* Language trigger */}
@@ -1368,6 +1460,7 @@ export default function MapPage() {
                   onEnded={() => {
                     setIsPlaying(false);
                     stopWaveform();
+                    if (tourModeRef.current) return;
                     if (story.coordinates) {
                       const echoes = getNextEchoes(story.coordinates.lat, story.coordinates.lng, story.era);
                       if (echoes.length) setNextEchoes(echoes);
@@ -1496,11 +1589,72 @@ export default function MapPage() {
                       <div style={{ marginTop: '0.75rem', fontFamily: "'DM Mono',monospace", fontSize: '0.6rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, letterSpacing: '0.02em' }}>
                         {story.context}
                       </div>
+
+                      {/* Share */}
+                      {story.coordinates && (
+                        <button
+                          onClick={() => {
+                            const url = `${window.location.origin}${window.location.pathname}?lat=${story.coordinates.lat}&lng=${story.coordinates.lng}&era=${eraRef.current}`;
+                            navigator.clipboard.writeText(url).then(() => {
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 2000);
+                            });
+                          }}
+                          style={{
+                            marginTop: '0.75rem',
+                            background: 'transparent',
+                            border: '1px solid rgba(200,169,110,0.2)',
+                            borderRadius: '3px',
+                            padding: '0.3rem 0.7rem',
+                            fontFamily: "'DM Mono',monospace",
+                            fontSize: '0.58rem',
+                            color: copied ? '#c8a96e' : 'rgba(255,255,255,0.35)',
+                            cursor: 'pointer',
+                            letterSpacing: '0.05em',
+                            transition: 'color 0.2s, border-color 0.2s',
+                          }}
+                        >
+                          {copied ? '✓ Link copied' : 'Share this echo'}
+                        </button>
+                      )}
                     </div>
                   </div>
 
+                  {/* Tour controls */}
+                  {tourMode && !isAnyPlaying && !loading && (
+                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(200,169,110,0.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.54rem', color: 'rgba(200,169,110,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                        Echo {tourIndex + 1} / {HOTSPOTS.length}
+                      </span>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          onClick={() => { setTourMode(false); setTourIndex(0); }}
+                          style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '3px', padding: '0.3rem 0.65rem', fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', letterSpacing: '0.04em' }}
+                        >
+                          End tour
+                        </button>
+                        {tourIndex + 1 < HOTSPOTS.length && (
+                          <button
+                            onClick={advanceTour}
+                            style={{ background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.35)', borderRadius: '3px', padding: '0.3rem 0.65rem', fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', color: '#c8a96e', cursor: 'pointer', letterSpacing: '0.04em' }}
+                          >
+                            Next echo →
+                          </button>
+                        )}
+                        {tourIndex + 1 >= HOTSPOTS.length && (
+                          <button
+                            onClick={() => { setTourMode(false); setTourIndex(0); }}
+                            style={{ background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.35)', borderRadius: '3px', padding: '0.3rem 0.65rem', fontFamily: "'DM Mono',monospace", fontSize: '0.58rem', color: '#c8a96e', cursor: 'pointer', letterSpacing: '0.04em' }}
+                          >
+                            Tour complete ✓
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Connected Echoes */}
-                  {nextEchoes && (
+                  {!tourMode && nextEchoes && (
                     <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(200,169,110,0.12)', animation: 'fadeInSource 0.5s ease forwards' }}>
                       <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '0.54rem', color: 'rgba(200,169,110,0.6)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
                         Continue the story —
