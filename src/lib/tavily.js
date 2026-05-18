@@ -4,8 +4,8 @@ const client = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
 export async function researchLocation(address, lat, lng) {
   const queries = [
-    `${address} Brooklyn history historical events`,
-    `${address} Brooklyn notable events people stories`,
+    `${address} history historical events`,
+    `${address} notable events people stories`,
   ];
 
   try {
@@ -40,7 +40,7 @@ export async function researchLocation(address, lat, lng) {
     console.error('Tavily error:', err);
     const neighborhood = extractNeighborhood(address);
     const fallback = await client.search(
-      `${neighborhood} Brooklyn history 1900s 1970s 1980s stories`,
+      `${neighborhood} New York City history stories`,
       { maxResults: 5, includeAnswer: true },
     );
     return {
@@ -58,38 +58,37 @@ export async function researchLocation(address, lat, lng) {
 
 function extractNeighborhood(address) {
   const neighborhoods = [
-    'Williamsburg',
-    'Bushwick',
-    'Bed-Stuy',
-    'Bedford-Stuyvesant',
-    'Crown Heights',
-    'Park Slope',
-    'Red Hook',
-    'Flatbush',
-    'Brownsville',
-    'East New York',
-    'Sunset Park',
-    'Bay Ridge',
-    'Bensonhurst',
-    'Borough Park',
-    'Flatlands',
-    'Canarsie',
-    'Marine Park',
-    'Coney Island',
-    'Brighton Beach',
-    'Sheepshead Bay',
-    'Greenpoint',
-    'DUMBO',
-    'Cobble Hill',
-    'Carroll Gardens',
-    'Gowanus',
-    'Prospect Heights',
-    'Fort Greene',
-    'Clinton Hill',
-    'Prospect Park',
+    // Brooklyn
+    'Williamsburg', 'Bushwick', 'Bed-Stuy', 'Bedford-Stuyvesant', 'Crown Heights',
+    'Park Slope', 'Red Hook', 'Flatbush', 'Brownsville', 'East New York',
+    'Sunset Park', 'Bay Ridge', 'Bensonhurst', 'Borough Park', 'Flatlands',
+    'Canarsie', 'Marine Park', 'Coney Island', 'Brighton Beach', 'Sheepshead Bay',
+    'Greenpoint', 'DUMBO', 'Cobble Hill', 'Carroll Gardens', 'Gowanus',
+    'Prospect Heights', 'Fort Greene', 'Clinton Hill', 'Prospect Park',
+    // Manhattan
+    'Harlem', 'East Harlem', 'Washington Heights', 'Inwood', 'Upper West Side',
+    'Upper East Side', 'Midtown', 'Hell\'s Kitchen', 'Chelsea', 'Greenwich Village',
+    'East Village', 'Lower East Side', 'Chinatown', 'Tribeca', 'SoHo',
+    'Financial District', 'Battery Park', 'Morningside Heights', 'Hamilton Heights',
+    // Queens
+    'Astoria', 'Long Island City', 'Flushing', 'Jamaica', 'Forest Hills',
+    'Jackson Heights', 'Corona', 'Elmhurst', 'Woodside', 'Sunnyside',
+    'Ridgewood', 'Maspeth', 'Glendale', 'Rego Park', 'Kew Gardens',
+    'Rockaway', 'Howard Beach', 'Bayside', 'Whitestone', 'College Point',
+    // Bronx
+    'South Bronx', 'Hunts Point', 'Mott Haven', 'Concourse', 'Grand Concourse',
+    'Fordham', 'Belmont', 'Tremont', 'Morrisania', 'Highbridge',
+    'Riverdale', 'Pelham Bay', 'Co-op City', 'Norwood', 'Woodlawn',
+    // Staten Island
+    'St. George', 'Stapleton', 'Tompkinsville', 'New Brighton', 'Tottenville',
+    'Great Kills', 'Annadale', 'Eltingville', 'Rossville',
   ];
   for (const n of neighborhoods) {
     if (address.includes(n)) return n;
   }
-  return 'Brooklyn';
+  // Fall back to borough name if present
+  for (const borough of ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island']) {
+    if (address.includes(borough)) return borough;
+  }
+  return 'New York City';
 }

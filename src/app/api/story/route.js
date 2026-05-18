@@ -17,7 +17,7 @@ function addBreaths(text) {
 
 export async function POST(req) {
   try {
-    const { address, lat, lng, language = 'en' } = await req.json();
+    const { address, lat, lng, language = 'en', era = 'any' } = await req.json();
 
     if (!address) {
       return NextResponse.json({ error: 'Missing address' }, { status: 400 });
@@ -30,7 +30,7 @@ export async function POST(req) {
       lat,
       lng,
     );
-    const storyData = await generateStory(address, research, summary, language);
+    const storyData = await generateStory(address, research, summary, language, era);
 
     const storyText = addBreaths(storyData.story);
     const introText = storyData.intro

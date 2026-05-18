@@ -5,9 +5,9 @@ export async function POST(req) {
 
   // Try multiple query variations
   const queries = [
-    `${query} Brooklyn New York`,
-    `${query} Brooklyn NY`,
     `${query} New York City`,
+    `${query} NYC`,
+    `${query} New York`,
     query,
   ];
 
@@ -22,13 +22,12 @@ export async function POST(req) {
       const data = await res.json();
 
       if (data.length > 0) {
-        // Prefer results in Brooklyn/Kings County
-        const brooklyn = data.find(
-          (r) =>
-            r.display_name?.toLowerCase().includes('brooklyn') ||
-            r.display_name?.toLowerCase().includes('kings county'),
+        // Prefer results within NYC's 5 boroughs
+        const nycBoroughs = ['manhattan', 'brooklyn', 'queens', 'bronx', 'staten island'];
+        const nyc = data.find((r) =>
+          nycBoroughs.some((b) => r.display_name?.toLowerCase().includes(b)),
         );
-        const best = brooklyn || data[0];
+        const best = nyc || data[0];
         return NextResponse.json({
           lat: parseFloat(best.lat),
           lng: parseFloat(best.lon),

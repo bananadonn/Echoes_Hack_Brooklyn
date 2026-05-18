@@ -8,13 +8,17 @@ const LANGUAGE_NAMES = {
   ur: 'Urdu', hi: 'Hindi',
 };
 
-export async function generateStory(address, research, summary, language = 'en') {
+export async function generateStory(address, research, summary, language = 'en', era = 'any') {
   const langName = LANGUAGE_NAMES[language] ?? 'English';
   const langInstruction = language === 'en'
     ? ''
     : `IMPORTANT: Write the entire response — story, intro, title, context, narrator, address_display — in ${langName}. Every field must be in ${langName}. The speech patterns and contractions should feel natural to a native ${langName} speaker, not a translation.\n\n`;
 
-  const prompt = `${langInstruction}You are writing a short first-person spoken monologue for a location-based audio storytelling app called Echoes.
+  const eraInstruction = era === 'any'
+    ? ''
+    : `ERA CONSTRAINT: The story MUST be set in the ${era} period. The narrator must be someone who lived during that time. The ERA field in your response must reflect this period. If the research does not cover this era, draw on general historical knowledge of the location and era.\n\n`;
+
+  const prompt = `${langInstruction}${eraInstruction}You are writing a short first-person spoken monologue for a location-based audio storytelling app called Echoes.
 
 Location: ${address}
 
@@ -79,7 +83,7 @@ Respond in this exact JSON format with no extra text:
     return JSON.parse(cleaned);
   } catch {
     return {
-      title: 'A Brooklyn Story',
+      title: 'A New York Story',
       story: text,
       context: '',
       era: 'Unknown era',

@@ -3,7 +3,18 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
-const BROOKLYN_CENTER = [40.6782, -73.9442];
+const NYC_CENTER = [40.7128, -74.0060];
+
+const ERAS = [
+  { code: 'any',       label: 'Any era' },
+  { code: '1600s-1800s', label: '1600s – 1800s' },
+  { code: '1900s-1920s', label: '1900s – 1920s' },
+  { code: '1930s-1940s', label: '1930s – 1940s' },
+  { code: '1950s-1960s', label: '1950s – 1960s' },
+  { code: '1970s-1980s', label: '1970s – 1980s' },
+  { code: '1990s-2000s', label: '1990s – 2000s' },
+  { code: '2010s-today', label: '2010s – Today' },
+];
 
 const LANGUAGES = [
   { code: 'en', label: 'EN', name: 'English' },
@@ -323,6 +334,10 @@ export default function MapPage() {
   const [nextEchoes, setNextEchoes] = useState(null);
   const [language, setLanguage] = useState('en');
   const languageRef = useRef('en');
+  const [era, setEra] = useState('any');
+  const eraRef = useRef('any');
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const [showEraMenu, setShowEraMenu] = useState(false);
   const handleLocationClickRef = useRef(null);
   const [listening, setListening] = useState(false);
   const listeningRef = useRef(false);
@@ -330,6 +345,7 @@ export default function MapPage() {
 
   // Keep refs current every render so stale Leaflet closures always read latest values
   languageRef.current = language;
+  eraRef.current = era;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -483,6 +499,7 @@ export default function MapPage() {
           lat,
           lng,
           language: languageRef.current,
+          era: eraRef.current,
         }),
       });
       if (!res.ok) {
@@ -605,8 +622,8 @@ export default function MapPage() {
     setSearching(true);
     setSearch('');
 
-    let lat = BROOKLYN_CENTER[0];
-    let lng = BROOKLYN_CENTER[1];
+    let lat = NYC_CENTER[0];
+    let lng = NYC_CENTER[1];
     let geocoded = false;
 
     try {
@@ -933,53 +950,131 @@ export default function MapPage() {
               {searching ? '...' : 'Search →'}
             </button>
           </form>
-          {/* Language selector */}
-          <div
-            className="lang-scroll"
-            style={{
-              display: 'flex',
-              gap: '0.4rem',
-              marginTop: '0.6rem',
-              pointerEvents: 'all',
-              overflowX: 'auto',
-              flexWrap: 'nowrap',
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              paddingBottom: '2px',
-            }}
-          >
-            {LANGUAGES.map((lang) => (
+          {/* Language + Era dropdowns */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', pointerEvents: 'all', position: 'relative' }}>
+            {/* Language trigger */}
+            <div style={{ position: 'relative' }}>
               <button
-                key={lang.code}
-                onClick={() => setLanguage(lang.code)}
-                title={lang.name}
+                onClick={() => { setShowLangMenu(v => !v); setShowEraMenu(false); }}
                 style={{
-                  background:
-                    language === lang.code
-                      ? 'rgba(200,169,110,0.18)'
-                      : 'transparent',
-                  border: `1px solid ${
-                    language === lang.code
-                      ? 'rgba(200,169,110,0.5)'
-                      : 'rgba(255,255,255,0.1)'
-                  }`,
+                  background: language !== 'en' ? 'rgba(200,169,110,0.18)' : 'rgba(20,20,25,0.97)',
+                  border: `1px solid ${language !== 'en' ? 'rgba(200,169,110,0.5)' : 'rgba(200,169,110,0.2)'}`,
                   borderRadius: '3px',
-                  padding: '0.25rem 0.55rem',
+                  padding: '0.35rem 0.7rem',
                   fontFamily: "'DM Mono',monospace",
-                  fontSize: '0.58rem',
-                  color:
-                    language === lang.code
-                      ? '#c8a96e'
-                      : 'rgba(255,255,255,0.35)',
+                  fontSize: '0.62rem',
+                  color: language !== 'en' ? '#c8a96e' : 'rgba(255,255,255,0.55)',
                   cursor: 'pointer',
-                  letterSpacing: '0.04em',
-                  transition: 'all 0.15s',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                {lang.label}
+                {LANGUAGES.find(l => l.code === language)?.label ?? 'EN'}
+                <span style={{ opacity: 0.5, fontSize: '0.5rem' }}>▾</span>
               </button>
-            ))}
+              {showLangMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 4px)',
+                  left: 0,
+                  background: 'rgba(14,14,18,0.98)',
+                  border: '1px solid rgba(200,169,110,0.2)',
+                  borderRadius: '4px',
+                  padding: '0.3rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.15rem',
+                  zIndex: 2000,
+                  minWidth: '120px',
+                }}>
+                  {LANGUAGES.map(lang => (
+                    <button
+                      key={lang.code}
+                      onClick={() => { setLanguage(lang.code); setShowLangMenu(false); }}
+                      style={{
+                        background: language === lang.code ? 'rgba(200,169,110,0.15)' : 'transparent',
+                        border: 'none',
+                        borderRadius: '3px',
+                        padding: '0.3rem 0.6rem',
+                        fontFamily: "'DM Mono',monospace",
+                        fontSize: '0.62rem',
+                        color: language === lang.code ? '#c8a96e' : 'rgba(255,255,255,0.5)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {lang.label} <span style={{ opacity: 0.4 }}>{lang.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Era trigger */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => { setShowEraMenu(v => !v); setShowLangMenu(false); }}
+                style={{
+                  background: era !== 'any' ? 'rgba(200,169,110,0.18)' : 'rgba(20,20,25,0.97)',
+                  border: `1px solid ${era !== 'any' ? 'rgba(200,169,110,0.5)' : 'rgba(200,169,110,0.2)'}`,
+                  borderRadius: '3px',
+                  padding: '0.35rem 0.7rem',
+                  fontFamily: "'DM Mono',monospace",
+                  fontSize: '0.62rem',
+                  color: era !== 'any' ? '#c8a96e' : 'rgba(255,255,255,0.55)',
+                  cursor: 'pointer',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {ERAS.find(e => e.code === era)?.label ?? 'Any era'}
+                <span style={{ opacity: 0.5, fontSize: '0.5rem' }}>▾</span>
+              </button>
+              {showEraMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 4px)',
+                  left: 0,
+                  background: 'rgba(14,14,18,0.98)',
+                  border: '1px solid rgba(200,169,110,0.2)',
+                  borderRadius: '4px',
+                  padding: '0.3rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.15rem',
+                  zIndex: 2000,
+                  minWidth: '140px',
+                }}>
+                  {ERAS.map(e => (
+                    <button
+                      key={e.code}
+                      onClick={() => { setEra(e.code); setShowEraMenu(false); }}
+                      style={{
+                        background: era === e.code ? 'rgba(200,169,110,0.15)' : 'transparent',
+                        border: 'none',
+                        borderRadius: '3px',
+                        padding: '0.3rem 0.6rem',
+                        fontFamily: "'DM Mono',monospace",
+                        fontSize: '0.62rem',
+                        color: era === e.code ? '#c8a96e' : 'rgba(255,255,255,0.5)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        letterSpacing: '0.04em',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {e.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
